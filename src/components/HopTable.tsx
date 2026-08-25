@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { HopDiagnostic } from '../types';
-import { Shield, Globe, Server, Check, Copy, AlertTriangle, AlertCircle, CheckCircle } from 'lucide-react';
+import { Shield, Globe, Check, Copy, AlertTriangle, AlertCircle, CheckCircle, Minimize2, Maximize2 } from 'lucide-react';
 
 interface HopTableProps {
   hops: HopDiagnostic[];
@@ -10,6 +10,7 @@ interface HopTableProps {
 export const HopTable: React.FC<HopTableProps> = ({ hops, probeCount }) => {
   const [filterText, setFilterText] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'loss' | 'latency' | 'ratelimited'>('all');
+  const [isCompact, setIsCompact] = useState(false);
   const [copiedIp, setCopiedIp] = useState<string | null>(null);
 
   const copyToClipboard = (ip: string) => {
@@ -55,11 +56,11 @@ export const HopTable: React.FC<HopTableProps> = ({ hops, probeCount }) => {
                 statusFilter === 'all' ? 'bg-white/15 text-cyan-300 font-bold shadow-sm' : 'text-slate-400 hover:text-slate-200'
               }`}
             >
-              All Hops ({hops.length})
+              All ({hops.length})
             </button>
             <button
               onClick={() => setStatusFilter('loss')}
-              className={`px-3 py-1.5 rounded-lg font-medium transition ${
+              className={`px-2.5 py-1.5 rounded-lg font-medium transition ${
                 statusFilter === 'loss' ? 'bg-rose-500/20 text-rose-300 font-bold border border-rose-400/30' : 'text-slate-400 hover:text-slate-200'
               }`}
             >
@@ -67,15 +68,15 @@ export const HopTable: React.FC<HopTableProps> = ({ hops, probeCount }) => {
             </button>
             <button
               onClick={() => setStatusFilter('latency')}
-              className={`px-3 py-1.5 rounded-lg font-medium transition ${
+              className={`px-2.5 py-1.5 rounded-lg font-medium transition ${
                 statusFilter === 'latency' ? 'bg-amber-500/20 text-amber-300 font-bold border border-amber-400/30' : 'text-slate-400 hover:text-slate-200'
               }`}
             >
-              Elevated RTT ({hops.filter(h => h.avgRtt > 30 || h.degradationDelta > 20).length})
+              Latency ({hops.filter(h => h.avgRtt > 30 || h.degradationDelta > 20).length})
             </button>
             <button
               onClick={() => setStatusFilter('ratelimited')}
-              className={`px-3 py-1.5 rounded-lg font-medium transition ${
+              className={`px-2.5 py-1.5 rounded-lg font-medium transition ${
                 statusFilter === 'ratelimited' ? 'bg-indigo-500/20 text-indigo-300 font-bold border border-indigo-400/30' : 'text-slate-400 hover:text-slate-200'
               }`}
             >
@@ -83,13 +84,27 @@ export const HopTable: React.FC<HopTableProps> = ({ hops, probeCount }) => {
             </button>
           </div>
 
+          {/* Compact Mode Toggle */}
+          <button
+            onClick={() => setIsCompact(prev => !prev)}
+            title={isCompact ? "Switch to Expanded View" : "Switch to Compact Dense View"}
+            className={`flex items-center gap-1.5 px-3 py-2 rounded-xl border text-xs font-semibold transition backdrop-blur-md ${
+              isCompact
+                ? 'bg-cyan-500/20 text-cyan-200 border-cyan-400/40 shadow-sm shadow-cyan-950/40 ring-1 ring-cyan-400/30'
+                : 'bg-black/30 text-slate-300 border-white/10 hover:bg-white/10 hover:text-white'
+            }`}
+          >
+            {isCompact ? <Maximize2 className="w-3.5 h-3.5 text-cyan-300" /> : <Minimize2 className="w-3.5 h-3.5 text-slate-400" />}
+            <span>{isCompact ? 'Compact: ON' : 'Compact Mode'}</span>
+          </button>
+
           {/* Search Input */}
           <input
             type="text"
-            placeholder="Filter by IP, Host, ASN..."
+            placeholder="Filter IP, Host, ASN..."
             value={filterText}
             onChange={(e) => setFilterText(e.target.value)}
-            className="bg-black/30 text-xs text-slate-100 placeholder-slate-400 border border-white/10 rounded-xl px-3.5 py-2 focus:outline-none focus:ring-1 focus:ring-cyan-400 focus:border-cyan-400/50 backdrop-blur-md w-48 shadow-inner"
+            className="bg-black/30 text-xs text-slate-100 placeholder-slate-400 border border-white/10 rounded-xl px-3 py-2 focus:outline-none focus:ring-1 focus:ring-cyan-400 focus:border-cyan-400/50 backdrop-blur-md w-40 sm:w-48 shadow-inner"
           />
         </div>
       </div>
@@ -99,18 +114,18 @@ export const HopTable: React.FC<HopTableProps> = ({ hops, probeCount }) => {
         <table className="w-full text-left text-xs border-collapse">
           <thead>
             <tr className="bg-black/40 text-slate-400 font-semibold border-b border-white/10 uppercase tracking-wider text-[10px]">
-              <th className="py-3 px-3.5 text-center w-12">#</th>
-              <th className="py-3 px-3.5">Node Address / FQDN</th>
-              <th className="py-3 px-3.5">Carrier ASN & Geo</th>
-              <th className="py-3 px-3.5 text-center">Loss %</th>
-              <th className="py-3 px-3.5 text-center">Snt/Rcv</th>
-              <th className="py-3 px-3.5 text-right">Last</th>
-              <th className="py-3 px-3.5 text-right">Avg RTT</th>
-              <th className="py-3 px-3.5 text-right">Min / Max</th>
-              <th className="py-3 px-3.5 text-right">Jitter</th>
-              <th className="py-3 px-3.5 text-right">StdDev</th>
-              <th className="py-3 px-3.5 text-center">RTT History</th>
-              <th className="py-3 px-3.5 text-center">Diagnostic Status</th>
+              <th className={`${isCompact ? 'py-2 px-2 w-9' : 'py-3 px-3.5 w-12'} text-center`}>#</th>
+              <th className={isCompact ? 'py-2 px-2.5' : 'py-3 px-3.5'}>Node Address / FQDN</th>
+              <th className={isCompact ? 'py-2 px-2.5' : 'py-3 px-3.5'}>Carrier ASN & Geo</th>
+              <th className={`${isCompact ? 'py-2 px-2' : 'py-3 px-3.5'} text-center`}>Loss %</th>
+              {!isCompact && <th className="py-3 px-3.5 text-center">Snt/Rcv</th>}
+              <th className={`${isCompact ? 'py-2 px-2' : 'py-3 px-3.5'} text-right`}>Last</th>
+              <th className={`${isCompact ? 'py-2 px-2' : 'py-3 px-3.5'} text-right`}>Avg RTT</th>
+              {!isCompact && <th className="py-3 px-3.5 text-right">Min / Max</th>}
+              <th className={`${isCompact ? 'py-2 px-2' : 'py-3 px-3.5'} text-right`}>Jitter</th>
+              {!isCompact && <th className="py-3 px-3.5 text-right">StdDev</th>}
+              {!isCompact && <th className="py-3 px-3.5 text-center">RTT History</th>}
+              <th className={`${isCompact ? 'py-2 px-2' : 'py-3 px-3.5'} text-center`}>Status</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-white/5 font-mono">
@@ -129,16 +144,16 @@ export const HopTable: React.FC<HopTableProps> = ({ hops, probeCount }) => {
                   }`}
                 >
                   {/* Hop # */}
-                  <td className="py-3 px-3.5 text-center font-bold text-slate-400">
-                    <span className="px-2 py-0.5 rounded-md bg-white/5 text-[11px] text-slate-300 border border-white/5">
+                  <td className={`${isCompact ? 'py-1.5 px-2' : 'py-3 px-3.5'} text-center font-bold text-slate-400`}>
+                    <span className={`rounded-md bg-white/5 text-slate-300 border border-white/5 ${isCompact ? 'px-1.5 py-0.2 text-[10px]' : 'px-2 py-0.5 text-[11px]'}`}>
                       {hop.hop}
                     </span>
                   </td>
 
                   {/* IP & Hostname */}
-                  <td className="py-3 px-3.5">
+                  <td className={isCompact ? 'py-1.5 px-2.5' : 'py-3 px-3.5'}>
                     <div className="flex items-center gap-1.5">
-                      <span className="font-bold text-white font-mono text-[12px]">{hop.ip}</span>
+                      <span className={`font-bold text-white font-mono ${isCompact ? 'text-[11px]' : 'text-[12px]'}`}>{hop.ip}</span>
                       <button
                         onClick={() => copyToClipboard(hop.ip)}
                         title="Copy IP"
@@ -146,11 +161,16 @@ export const HopTable: React.FC<HopTableProps> = ({ hops, probeCount }) => {
                       >
                         {copiedIp === hop.ip ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
                       </button>
+                      {isCompact && hop.mplsLabel && (
+                        <span className="text-[9px] text-indigo-300 font-mono px-1 py-0.2 rounded bg-indigo-500/10 border border-indigo-500/20">
+                          {hop.mplsLabel}
+                        </span>
+                      )}
                     </div>
-                    <div className="text-[11px] text-slate-400 font-sans truncate max-w-[200px]" title={hop.host}>
+                    <div className={`text-slate-400 font-sans truncate ${isCompact ? 'text-[10px] max-w-[150px]' : 'text-[11px] max-w-[200px]'}`} title={hop.host}>
                       {hop.host || 'Unknown Host'}
                     </div>
-                    {hop.mplsLabel && (
+                    {!isCompact && hop.mplsLabel && (
                       <span className="text-[10px] text-indigo-300 font-mono flex items-center gap-1 mt-0.5">
                         <Shield className="w-2.5 h-2.5" />
                         {hop.mplsLabel}
@@ -159,29 +179,29 @@ export const HopTable: React.FC<HopTableProps> = ({ hops, probeCount }) => {
                   </td>
 
                   {/* ASN & Geo */}
-                  <td className="py-3 px-3.5 font-sans">
-                    <div className="flex items-center gap-1.5 font-semibold text-slate-200 text-xs">
-                      <Globe className="w-3.5 h-3.5 text-cyan-400 flex-shrink-0" />
-                      <span className="truncate max-w-[170px]" title={`${hop.asn} - ${hop.asnOrg}`}>
-                        {hop.asn ? `${hop.asn} (${hop.asnOrg})` : 'Private Enterprise'}
+                  <td className={`${isCompact ? 'py-1.5 px-2.5' : 'py-3 px-3.5'} font-sans`}>
+                    <div className={`flex items-center gap-1.5 font-semibold text-slate-200 ${isCompact ? 'text-[11px]' : 'text-xs'}`}>
+                      <Globe className={`${isCompact ? 'w-3 h-3' : 'w-3.5 h-3.5'} text-cyan-400 flex-shrink-0`} />
+                      <span className={`truncate ${isCompact ? 'max-w-[130px]' : 'max-w-[170px]'}`} title={`${hop.asn} - ${hop.asnOrg}`}>
+                        {hop.asn ? (isCompact ? `${hop.asn}` : `${hop.asn} (${hop.asnOrg})`) : 'Private Enterprise'}
                       </span>
                     </div>
-                    <div className="text-[10px] text-slate-400 mt-0.5">
+                    <div className={`text-slate-400 ${isCompact ? 'text-[9px]' : 'text-[10px] mt-0.5'}`}>
                       {hop.city ? `${hop.city}, ${hop.countryCode || hop.country}` : 'Local Intranet'}
                     </div>
                   </td>
 
                   {/* Loss % */}
-                  <td className="py-3 px-3.5 text-center">
+                  <td className={`${isCompact ? 'py-1.5 px-2' : 'py-3 px-3.5'} text-center`}>
                     <div className="flex flex-col items-center">
-                      <span className={`font-bold text-xs ${
+                      <span className={`font-bold ${isCompact ? 'text-[11px]' : 'text-xs'} ${
                         isRateLimited ? 'text-amber-300' :
                         isCritical ? 'text-rose-300' :
                         hasLoss ? 'text-rose-200' : 'text-emerald-300'
                       }`}>
                         {hop.lossPercent}%
                       </span>
-                      <div className="w-12 bg-black/40 h-1.5 rounded-full overflow-hidden mt-1 border border-white/5">
+                      <div className={`${isCompact ? 'w-8 h-1' : 'w-12 h-1.5'} bg-black/40 rounded-full overflow-hidden mt-0.5 border border-white/5`}>
                         <div
                           className={`h-full ${
                             isRateLimited ? 'bg-amber-400 shadow-[0_0_6px_#fbbf24]' :
@@ -194,87 +214,95 @@ export const HopTable: React.FC<HopTableProps> = ({ hops, probeCount }) => {
                   </td>
 
                   {/* Sent / Recv */}
-                  <td className="py-3 px-3.5 text-center text-slate-300 text-[11px]">
-                    {hop.sentCount} / <span className={hop.recvCount < hop.sentCount ? 'text-rose-300 font-bold' : 'text-slate-300'}>{hop.recvCount}</span>
-                  </td>
+                  {!isCompact && (
+                    <td className="py-3 px-3.5 text-center text-slate-300 text-[11px]">
+                      {hop.sentCount} / <span className={hop.recvCount < hop.sentCount ? 'text-rose-300 font-bold' : 'text-slate-300'}>{hop.recvCount}</span>
+                    </td>
+                  )}
 
                   {/* Last RTT */}
-                  <td className="py-3 px-3.5 text-right font-medium text-slate-200">
+                  <td className={`${isCompact ? 'py-1.5 px-2 text-[11px]' : 'py-3 px-3.5'} text-right font-medium text-slate-200`}>
                     {hop.lastRtt} ms
                   </td>
 
                   {/* Avg RTT */}
-                  <td className="py-3 px-3.5 text-right">
-                    <span className={`font-bold text-xs ${
+                  <td className={`${isCompact ? 'py-1.5 px-2' : 'py-3 px-3.5'} text-right`}>
+                    <span className={`font-bold ${isCompact ? 'text-[11px]' : 'text-xs'} ${
                       hop.avgRtt > 80 ? 'text-amber-300' :
                       hop.avgRtt > 30 ? 'text-cyan-300' : 'text-emerald-300'
                     }`}>
                       {hop.avgRtt} ms
                     </span>
                     {hop.degradationDelta > 20 && (
-                      <div className="text-[9px] text-cyan-400 font-sans">
+                      <div className={`${isCompact ? 'text-[8px]' : 'text-[9px]'} text-cyan-400 font-sans`}>
                         +{hop.degradationDelta}ms
                       </div>
                     )}
                   </td>
 
                   {/* Min / Max */}
-                  <td className="py-3 px-3.5 text-right text-slate-400 text-[11px]">
-                    <span className="text-emerald-300">{hop.bestRtt}</span> / <span className="text-amber-300">{hop.worstRtt}</span>
-                  </td>
+                  {!isCompact && (
+                    <td className="py-3 px-3.5 text-right text-slate-400 text-[11px]">
+                      <span className="text-emerald-300">{hop.bestRtt}</span> / <span className="text-amber-300">{hop.worstRtt}</span>
+                    </td>
+                  )}
 
                   {/* Jitter */}
-                  <td className="py-3 px-3.5 text-right">
+                  <td className={`${isCompact ? 'py-1.5 px-2 text-[11px]' : 'py-3 px-3.5'} text-right`}>
                     <span className={`font-medium ${hop.jitter > 10 ? 'text-amber-300' : 'text-slate-300'}`}>
                       {hop.jitter} ms
                     </span>
                   </td>
 
                   {/* StdDev */}
-                  <td className="py-3 px-3.5 text-right text-slate-400 text-[11px]">
-                    ±{hop.stdDevRtt}
-                  </td>
+                  {!isCompact && (
+                    <td className="py-3 px-3.5 text-right text-slate-400 text-[11px]">
+                      ±{hop.stdDevRtt}
+                    </td>
+                  )}
 
                   {/* Sparkline History Visual */}
-                  <td className="py-3 px-3.5 text-center">
-                    <div className="flex items-end justify-center gap-0.5 h-6 w-24 mx-auto">
-                      {hop.rttHistory.slice(-8).map((val, hIdx) => {
-                        const maxVal = Math.max(...hop.rttHistory, 10);
-                        const heightPercent = Math.min(100, Math.max(15, (val / maxVal) * 100));
-                        return (
-                          <div
-                            key={hIdx}
-                            className={`w-2 rounded-t-sm transition-all ${
-                              val > 50 ? 'bg-amber-400/90' : 'bg-cyan-400/80 shadow-[0_0_4px_rgba(6,182,212,0.4)]'
-                            }`}
-                            style={{ height: `${heightPercent}%` }}
-                            title={`Probe ${hIdx + 1}: ${val}ms`}
-                          />
-                        );
-                      })}
-                    </div>
-                  </td>
+                  {!isCompact && (
+                    <td className="py-3 px-3.5 text-center">
+                      <div className="flex items-end justify-center gap-0.5 h-6 w-24 mx-auto">
+                        {hop.rttHistory.slice(-8).map((val, hIdx) => {
+                          const maxVal = Math.max(...hop.rttHistory, 10);
+                          const heightPercent = Math.min(100, Math.max(15, (val / maxVal) * 100));
+                          return (
+                            <div
+                              key={hIdx}
+                              className={`w-2 rounded-t-sm transition-all ${
+                                val > 50 ? 'bg-amber-400/90' : 'bg-cyan-400/80 shadow-[0_0_4px_rgba(6,182,212,0.4)]'
+                              }`}
+                              style={{ height: `${heightPercent}%` }}
+                              title={`Probe ${hIdx + 1}: ${val}ms`}
+                            />
+                          );
+                        })}
+                      </div>
+                    </td>
+                  )}
 
                   {/* Status Badge */}
-                  <td className="py-3 px-3.5 text-center font-sans">
+                  <td className={`${isCompact ? 'py-1.5 px-2' : 'py-3 px-3.5'} text-center font-sans`}>
                     {isRateLimited ? (
-                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-amber-500/15 text-amber-200 border border-amber-400/30 backdrop-blur-sm" title="ICMP Rate Limited by Router Control Plane">
-                        <AlertCircle className="w-3 h-3 text-amber-400" />
-                        CoPP Rate-Ltd
+                      <span className={`inline-flex items-center gap-1 rounded-full font-semibold bg-amber-500/15 text-amber-200 border border-amber-400/30 backdrop-blur-sm ${isCompact ? 'px-2 py-0.2 text-[9px]' : 'px-2.5 py-0.5 text-[10px]'}`} title="ICMP Rate Limited by Router Control Plane">
+                        <AlertCircle className="w-2.5 h-2.5 text-amber-400" />
+                        {isCompact ? 'Rate-Ltd' : 'CoPP Rate-Ltd'}
                       </span>
                     ) : isCritical ? (
-                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-rose-500/20 text-rose-200 border border-rose-400/40 backdrop-blur-sm animate-pulse">
-                        <AlertTriangle className="w-3 h-3 text-rose-400" />
-                        High Loss
+                      <span className={`inline-flex items-center gap-1 rounded-full font-semibold bg-rose-500/20 text-rose-200 border border-rose-400/40 backdrop-blur-sm animate-pulse ${isCompact ? 'px-2 py-0.2 text-[9px]' : 'px-2.5 py-0.5 text-[10px]'}`}>
+                        <AlertTriangle className="w-2.5 h-2.5 text-rose-400" />
+                        {isCompact ? 'Critical' : 'High Loss'}
                       </span>
                     ) : hasLoss ? (
-                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-amber-500/15 text-amber-200 border border-amber-400/30 backdrop-blur-sm">
-                        <AlertTriangle className="w-3 h-3 text-amber-400" />
-                        Degraded
+                      <span className={`inline-flex items-center gap-1 rounded-full font-semibold bg-amber-500/15 text-amber-200 border border-amber-400/30 backdrop-blur-sm ${isCompact ? 'px-2 py-0.2 text-[9px]' : 'px-2.5 py-0.5 text-[10px]'}`}>
+                        <AlertTriangle className="w-2.5 h-2.5 text-amber-400" />
+                        {isCompact ? 'Degraded' : 'Degraded'}
                       </span>
                     ) : (
-                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/15 text-emerald-200 border border-emerald-400/30 backdrop-blur-sm">
-                        <CheckCircle className="w-3 h-3 text-emerald-400" />
+                      <span className={`inline-flex items-center gap-1 rounded-full font-semibold bg-emerald-500/15 text-emerald-200 border border-emerald-400/30 backdrop-blur-sm ${isCompact ? 'px-2 py-0.2 text-[9px]' : 'px-2.5 py-0.5 text-[10px]'}`}>
+                        <CheckCircle className="w-2.5 h-2.5 text-emerald-400" />
                         Optimal
                       </span>
                     )}

@@ -1,9 +1,20 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { DiagnosticTab, DiagnosticSession, SubnetAnalysis, HostScanResult, AiTroubleshootingReport, NetworkPreset } from './types';
+import {
+  DiagnosticTab,
+  DiagnosticSession,
+  SubnetAnalysis,
+  HostScanResult,
+  AiTroubleshootingReport,
+  NetworkPreset,
+  UserSettings,
+  ThemeId
+} from './types';
 import { generateTraceroutePath, calculateSubnetAnalysis, generateIpRangeScan } from './utils/networkCalc';
 import { generateEnterprisePdfReport } from './utils/pdfGenerator';
+import { soundEngine } from './utils/audioAlert';
 import { Header, PRESETS } from './components/Header';
 import { Navigation } from './components/Navigation';
+import { Dashboard } from './components/Dashboard';
 import { HopVisualizer } from './components/HopVisualizer';
 import { HopTable } from './components/HopTable';
 import { LatencyJitterChart } from './components/LatencyJitterChart';
@@ -12,16 +23,58 @@ import { IpScanner } from './components/IpScanner';
 import { AdvancedTools } from './components/AdvancedTools';
 import { ReportViewer } from './components/ReportViewer';
 import { AiTroubleshooter } from './components/AiTroubleshooter';
+import { Settings, THEMES } from './components/Settings';
 import { Activity, ShieldAlert, Zap, Globe, Server, Play, Pause, RefreshCw, Download } from 'lucide-react';
 
+const DEFAULT_SETTINGS: UserSettings = {
+  theme: 'cyber-slate',
+  refreshIntervalMs: 1500,
+  defaultPacketSize: 64,
+  defaultDscp: 'CS0',
+  soundAlerts: false,
+  visualFlashing: true,
+  lossThresholdPercent: 5,
+  latencyThresholdMs: 80,
+  jitterThresholdMs: 15,
+  mosMinThreshold: 3.8,
+  dohProvider: 'cloudflare',
+  compactTablesByDefault: false,
+  autoTriggerAiOnCritical: false
+};
+
 export default function App() {
-  const [activeTab, setActiveTab] = useState<DiagnosticTab>('mtr');
+  const [activeTab, setActiveTab] = useState<DiagnosticTab>('dashboard');
   const [currentScenario, setCurrentScenario] = useState<string>('healthy');
   const [targetInput, setTargetInput] = useState('8.8.8.8');
   const [packetSize, setPacketSize] = useState<number>(64);
   const [dscpMark, setDscpMark] = useState<string>('CS0');
   const [isLiveProbing, setIsLiveProbing] = useState(false);
   const [cycleCounter, setCycleCounter] = useState(1);
+
+  // Settings State with LocalStorage Persistence
+  const [settings, setSettings] = useState<UserSettings>(() => {
+    try {
+      const saved = localStorage.getItem('nettrace_settings');
+      if (saved) {
+        return { ...DEFAULT_SETTINGS, ...JSON.parse(saved) };
+      }
+    } catch {
+      // Ignore parse failure
+    }
+    return DEFAULT_SETTINGS;
+  });
+
+  // Apply Theme class to document body
+  useEffect(() => {
+    try {
+      localStorage.setItem('nettrace_settings', JSON.stringify(settings));
+    } catch {
+      // Storage unavailable
+    }
+
+    const themeClass = `theme-${settings.theme}`;
+    document.body.className = `${themeClass} select-none sm:select-auto antialiased font-sans transition-colors duration-300`;
+  }, [settings]);
 
   // Diagnostic Session State (Hop by Hop MTR)
   const [session, setSession] = useState<DiagnosticSession>(() => {
@@ -50,10 +103,23 @@ export default function App() {
       probeIntervalRef.current = setInterval(() => {
         setCycleCounter(prev => {
           const nextCycle = prev + 1;
-          setSession(generateTraceroutePath(targetInput, currentScenario as any, nextCycle));
+          const newSession = generateTraceroutePath(targetInput, currentScenario as any, nextCycle);
+          setSession(newSession);
+
+          // Audio feedback if enabled
+          if (settings.soundAlerts) {
+            if (newSession.overallLossPercent >= settings.lossThresholdPercent) {
+              soundEngine.playCriticalAlarm();
+            } else if (newSession.overallLossPercent > 0 || newSession.overallAvgRtt > settings.latencyThresholdMs) {
+              soundEngine.playWarningChime();
+            } else {
+              soundEngine.playProbePing();
+            }
+          }
+
           return nextCycle;
         });
-      }, 1500);
+      }, settings.refreshIntervalMs || 1500);
     } else {
       if (probeIntervalRef.current) clearInterval(probeIntervalRef.current);
     }
@@ -61,7 +127,7 @@ export default function App() {
     return () => {
       if (probeIntervalRef.current) clearInterval(probeIntervalRef.current);
     };
-  }, [isLiveProbing, targetInput, currentScenario]);
+  }, [isLiveProbing, targetInput, currentScenario, settings.refreshIntervalMs, settings.soundAlerts, settings.lossThresholdPercent, settings.latencyThresholdMs]);
 
   const handleToggleLive = () => {
     setIsLiveProbing(prev => !prev);
@@ -70,7 +136,18 @@ export default function App() {
   const handleRunSingleCycle = () => {
     const nextCycle = cycleCounter + 1;
     setCycleCounter(nextCycle);
-    setSession(generateTraceroutePath(targetInput, currentScenario as any, nextCycle));
+    const newSession = generateTraceroutePath(targetInput, currentScenario as any, nextCycle);
+    setSession(newSession);
+
+    if (settings.soundAlerts) {
+      if (newSession.overallLossPercent >= settings.lossThresholdPercent) {
+        soundEngine.playCriticalAlarm();
+      } else if (newSession.overallLossPercent > 0) {
+        soundEngine.playWarningChime();
+      } else {
+        soundEngine.playProbePing();
+      }
+    }
   };
 
   const handleSelectPreset = (preset: NetworkPreset) => {
@@ -108,23 +185,50 @@ export default function App() {
     doc.save(`Network_Diagnostic_Report_${session.target.replace(/[^a-zA-Z0-9]/g, '_')}.pdf`);
   };
 
+  const handleUpdateSettings = (updated: Partial<UserSettings>) => {
+    setSettings(prev => ({ ...prev, ...updated }));
+  };
+
+  const handleResetDefaults = () => {
+    setSettings(DEFAULT_SETTINGS);
+  };
+
+  const handleCycleTheme = () => {
+    const themeList: ThemeId[] = ['cyber-slate', 'matrix-terminal', 'deep-space', 'enterprise-light', 'solarized-dark'];
+    const currentIdx = themeList.indexOf(settings.theme);
+    const nextTheme = themeList[(currentIdx + 1) % themeList.length];
+    handleUpdateSettings({ theme: nextTheme });
+  };
+
   const packetLossCount = session.hops.filter(h => h.lossPercent > 0 && h.status !== 'rate-limited').length;
 
   return (
-    <div className="min-h-screen relative overflow-x-hidden text-slate-100 flex flex-col font-sans bg-[#0a0f1d] selection:bg-cyan-500/30 selection:text-cyan-200">
-      {/* Dynamic Frosted Gradient Canvas Background */}
+    <div className="min-h-screen relative overflow-x-hidden text-slate-100 flex flex-col font-sans selection:bg-cyan-500/30 selection:text-cyan-200">
+      {/* Dynamic Ambient Background Canvas */}
       <div className="fixed inset-0 pointer-events-none z-0">
         <div 
           className="absolute inset-0 opacity-80"
           style={{
-            background: 'radial-gradient(circle at 0% 0%, #0f172a 0%, #1e1b4b 50%, #312e81 100%)'
+            background: settings.theme === 'enterprise-light'
+              ? 'radial-gradient(circle at 50% 0%, #e2e8f0 0%, #f8fafc 100%)'
+              : settings.theme === 'matrix-terminal'
+              ? 'radial-gradient(circle at 0% 0%, #030804 0%, #051408 50%, #020703 100%)'
+              : settings.theme === 'deep-space'
+              ? 'radial-gradient(circle at 0% 0%, #070617 0%, #1e113a 50%, #0b0726 100%)'
+              : settings.theme === 'solarized-dark'
+              ? 'radial-gradient(circle at 0% 0%, #002b36 0%, #073642 50%, #001e26 100%)'
+              : 'radial-gradient(circle at 0% 0%, #0f172a 0%, #1e1b4b 50%, #312e81 100%)'
           }}
         />
-        {/* Ambient atmospheric lighting orbs for glass refraction */}
-        <div className="absolute -top-40 -left-40 w-96 h-96 bg-cyan-500/15 rounded-full blur-3xl" />
-        <div className="absolute top-1/3 -right-32 w-96 h-96 bg-indigo-500/15 rounded-full blur-3xl" />
-        <div className="absolute bottom-10 left-1/4 w-96 h-96 bg-blue-600/10 rounded-full blur-3xl" />
-        <div className="absolute inset-0 bg-[radial-gradient(rgba(255,255,255,0.03)_1px,transparent_1px)] [background-size:24px_24px] pointer-events-none" />
+        {/* Ambient glow orbs */}
+        {settings.theme !== 'enterprise-light' && (
+          <>
+            <div className="absolute -top-40 -left-40 w-96 h-96 bg-cyan-500/10 rounded-full blur-3xl" />
+            <div className="absolute top-1/3 -right-32 w-96 h-96 bg-indigo-500/10 rounded-full blur-3xl" />
+            <div className="absolute bottom-10 left-1/4 w-96 h-96 bg-blue-600/10 rounded-full blur-3xl" />
+            <div className="absolute inset-0 bg-[radial-gradient(rgba(255,255,255,0.03)_1px,transparent_1px)] [background-size:24px_24px] pointer-events-none" />
+          </>
+        )}
       </div>
 
       {/* Top Enterprise Header */}
@@ -137,6 +241,9 @@ export default function App() {
           onSelectPreset={handleSelectPreset}
           onExportPdf={handleExportPdf}
           currentScenario={currentScenario}
+          theme={settings.theme}
+          onCycleTheme={handleCycleTheme}
+          onOpenSettings={() => setActiveTab('settings')}
         />
       </div>
 
@@ -151,6 +258,19 @@ export default function App() {
 
       {/* Main Workspace Canvas */}
       <main className="relative z-10 flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-6">
+        {activeTab === 'dashboard' && (
+          <Dashboard
+            session={session}
+            subnet={subnet}
+            scanResults={scanResults}
+            isLiveProbing={isLiveProbing}
+            onToggleLiveProbe={handleToggleLive}
+            onRunSingleCycle={handleRunSingleCycle}
+            onSelectPreset={handleSelectPreset}
+            onNavigateTab={setActiveTab}
+          />
+        )}
+
         {activeTab === 'mtr' && (
           <div className="space-y-6">
             {/* Custom Target Configuration Bar - Frosted Glass */}
@@ -180,6 +300,7 @@ export default function App() {
                       className="w-full bg-black/30 backdrop-blur-md border border-white/10 rounded-xl px-3 py-2 text-xs font-mono text-slate-200 focus:outline-none focus:border-cyan-400/50"
                     >
                       <option value={64} className="bg-slate-900">64 Bytes</option>
+                      <option value={128} className="bg-slate-900">128 Bytes</option>
                       <option value={512} className="bg-slate-900">512 Bytes</option>
                       <option value={1472} className="bg-slate-900">1472 Bytes</option>
                       <option value={1500} className="bg-slate-900">1500 Bytes</option>
@@ -280,6 +401,15 @@ export default function App() {
             onUpdateReport={setAiReport}
           />
         )}
+
+        {activeTab === 'settings' && (
+          <Settings
+            settings={settings}
+            onUpdateSettings={handleUpdateSettings}
+            onResetDefaults={handleResetDefaults}
+            session={session}
+          />
+        )}
       </main>
 
       {/* Frosted Footer */}
@@ -297,3 +427,4 @@ export default function App() {
     </div>
   );
 }
+

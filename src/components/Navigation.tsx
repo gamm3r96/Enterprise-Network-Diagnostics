@@ -1,5 +1,5 @@
 import React from 'react';
-import { Network, Cpu, Scan, FileText, Bot, Zap } from 'lucide-react';
+import { LayoutDashboard, Network, Cpu, Scan, FileText, Bot, Zap, Settings } from 'lucide-react';
 import { DiagnosticTab } from '../types';
 
 interface NavigationProps {
@@ -15,11 +15,19 @@ export const Navigation: React.FC<NavigationProps> = ({
 }) => {
   const tabs = [
     {
+      id: 'dashboard' as DiagnosticTab,
+      label: 'Executive NOC Dashboard',
+      sublabel: 'Overview & SLA KPIs',
+      icon: LayoutDashboard,
+      badge: 'NOC View',
+      badgeColor: 'bg-cyan-950 text-cyan-300 border-cyan-800'
+    },
+    {
       id: 'mtr' as DiagnosticTab,
       label: 'Hop-by-Hop MTR & Latency',
       sublabel: 'Traceroute & Loss Topology',
       icon: Network,
-      badge: packetLossCount > 0 ? `${packetLossCount} Anomalies` : null,
+      badge: packetLossCount > 0 ? `${packetLossCount} Drops` : null,
       badgeColor: 'bg-rose-950 text-rose-300 border-rose-800'
     },
     {
@@ -61,6 +69,14 @@ export const Navigation: React.FC<NavigationProps> = ({
       icon: Bot,
       badge: 'GenAI',
       badgeColor: 'bg-indigo-950 text-indigo-300 border-indigo-800'
+    },
+    {
+      id: 'settings' as DiagnosticTab,
+      label: 'Settings & Themes',
+      sublabel: 'Palettes, SLAs & Sounds',
+      icon: Settings,
+      badge: null,
+      badgeColor: ''
     }
   ];
 

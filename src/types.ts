@@ -1,4 +1,34 @@
-export type DiagnosticTab = 'mtr' | 'subnet' | 'scanner' | 'tools' | 'report' | 'ai';
+export type DiagnosticTab = 'dashboard' | 'mtr' | 'subnet' | 'scanner' | 'tools' | 'report' | 'ai' | 'settings';
+
+export type ThemeId = 'cyber-slate' | 'matrix-terminal' | 'deep-space' | 'enterprise-light' | 'solarized-dark';
+
+export interface UserSettings {
+  theme: ThemeId;
+  refreshIntervalMs: number;
+  defaultPacketSize: number;
+  defaultDscp: string;
+  soundAlerts: boolean;
+  visualFlashing: boolean;
+  lossThresholdPercent: number;
+  latencyThresholdMs: number;
+  jitterThresholdMs: number;
+  mosMinThreshold: number;
+  dohProvider: 'cloudflare' | 'google' | 'quad9' | 'adguard';
+  compactTablesByDefault: boolean;
+  autoTriggerAiOnCritical: boolean;
+}
+
+export interface NetworkIncident {
+  id: string;
+  timestamp: string;
+  severity: 'CRITICAL' | 'WARNING' | 'INFO';
+  title: string;
+  description: string;
+  affectedHop?: number;
+  affectedIp?: string;
+  metric: string;
+  value: string;
+}
 
 export interface HopDiagnostic {
   hop: number;

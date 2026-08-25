@@ -1,6 +1,6 @@
 {
   "name": "Enterprise Network Diagnostics Suite",
-  "description": "Enterprise network latency and packet loss troubleshooting suite featuring hop-by-hop MTR path analysis, subnet performance calculators, IP range scanning, advanced protocol tools (DNS DoH, TCP Mathis/BDP, PMTUD MTU/MSS, BGP Looking Glass, VoIP E-Model MOS, IPv6 SLAAC), and exportable PDF diagnostic reports.",
+  "description": "Enterprise network latency and packet loss troubleshooting suite featuring an Executive NOC Dashboard, customizable themes, hop-by-hop MTR path analysis, subnet calculators, IP range scanning, protocol tools (DNS DoH, TCP Mathis/BDP, PMTUD MTU/MSS, BGP Looking Glass, VoIP MOS, IPv6), telemetry sound alerts, and exportable PDF diagnostic reports.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

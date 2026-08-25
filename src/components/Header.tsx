@@ -1,6 +1,6 @@
 import React from 'react';
-import { Download, Play, Pause, RefreshCw, Server, ShieldCheck, AlertTriangle, Radio } from 'lucide-react';
-import { DiagnosticSession, NetworkPreset } from '../types';
+import { Download, Play, Pause, RefreshCw, Server, ShieldCheck, AlertTriangle, Radio, Palette, Settings } from 'lucide-react';
+import { DiagnosticSession, NetworkPreset, ThemeId } from '../types';
 import appLogo from '../assets/images/app_logo_icon_1786884494503.jpg';
 
 interface HeaderProps {
@@ -11,6 +11,9 @@ interface HeaderProps {
   onSelectPreset: (preset: NetworkPreset) => void;
   onExportPdf: () => void;
   currentScenario: string;
+  theme: ThemeId;
+  onCycleTheme: () => void;
+  onOpenSettings: () => void;
 }
 
 export const PRESETS: NetworkPreset[] = [
@@ -71,7 +74,10 @@ export const Header: React.FC<HeaderProps> = ({
   onRunSingleCycle,
   onSelectPreset,
   onExportPdf,
-  currentScenario
+  currentScenario,
+  theme,
+  onCycleTheme,
+  onOpenSettings
 }) => {
   return (
     <header className="bg-slate-950/40 backdrop-blur-xl border-b border-white/10 sticky top-0 z-40 shadow-[0_4px_30px_rgba(0,0,0,0.3)]">
@@ -179,6 +185,24 @@ export const Header: React.FC<HeaderProps> = ({
           >
             <Download className="w-3.5 h-3.5" />
             <span className="hidden sm:inline">Export PDF</span>
+          </button>
+
+          {/* Theme Quick Switcher */}
+          <button
+            onClick={onCycleTheme}
+            title={`Current Theme: ${theme}. Click to switch theme`}
+            className="p-2 rounded-xl bg-white/5 hover:bg-white/10 text-cyan-300 border border-white/10 backdrop-blur-md transition shadow-sm"
+          >
+            <Palette className="w-4 h-4" />
+          </button>
+
+          {/* Settings Shortcut */}
+          <button
+            onClick={onOpenSettings}
+            title="Open System & Telemetry Settings"
+            className="p-2 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white border border-white/10 backdrop-blur-md transition shadow-sm"
+          >
+            <Settings className="w-4 h-4" />
           </button>
         </div>
       </div>
