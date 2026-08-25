@@ -1,0 +1,42 @@
+{
+  "name": "NetTrace Enterprise Diagnostics",
+  "short_name": "NetTrace",
+  "description": "Enterprise network latency and packet loss troubleshooting suite featuring hop-by-hop MTR path analysis, subnet calculators, IP scanning, and network protocol engineering tools.",
+  "start_url": "/",
+  "id": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#020617",
+  "theme_color": "#0f172a",
+  "icons": [
+    {
+      "src": "/icon-192.svg",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-512.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["utilities", "productivity", "developer tools"],
+  "shortcuts": [
+    {
+      "name": "Start MTR Trace",
+      "short_name": "Trace",
+      "description": "Run real-time hop-by-hop MTR traceroute",
+      "url": "/?tab=mtr",
+      "icons": [{ "src": "/icon-192.svg", "sizes": "192x192" }]
+    },
+    {
+      "name": "Advanced Tools",
+      "short_name": "Tools",
+      "description": "DNS, TCP Mathis, PMTUD, BGP, VoIP E-Model, and IPv6 tools",
+      "url": "/?tab=tools",
+      "icons": [{ "src": "/icon-192.svg", "sizes": "192x192" }]
+    }
+  ]
+}
