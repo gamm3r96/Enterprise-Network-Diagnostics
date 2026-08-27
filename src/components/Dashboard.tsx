@@ -565,11 +565,11 @@ export const Dashboard: React.FC<DashboardProps> = ({
             )}
           </div>
 
-          {/* Preset Scenario Quick Launch */}
+          {/* Preset Target Quick Launch */}
           <div className="bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 p-5 shadow-md">
             <h4 className="text-xs font-bold uppercase tracking-wider text-slate-300 mb-3 flex items-center gap-2">
               <Sliders className="w-4 h-4 text-cyan-400" />
-              Scenario Benchmarks
+              Target Benchmarks
             </h4>
             <div className="space-y-2">
               {PRESETS.slice(0, 4).map((p, pIdx) => (

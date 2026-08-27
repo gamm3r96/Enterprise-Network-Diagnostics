@@ -10,6 +10,7 @@ import {
   ThemeId
 } from './types';
 import { generateTraceroutePath, calculateSubnetAnalysis, generateIpRangeScan } from './utils/networkCalc';
+import { fetchRealTraceroute, fetchRealPing, fetchRealIpScan } from './utils/realNetworkApi';
 import { generateEnterprisePdfReport } from './utils/pdfGenerator';
 import { soundEngine } from './utils/audioAlert';
 import { Header, PRESETS } from './components/Header';
@@ -44,12 +45,12 @@ const DEFAULT_SETTINGS: UserSettings = {
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<DiagnosticTab>('dashboard');
-  const [currentScenario, setCurrentScenario] = useState<string>('healthy');
   const [targetInput, setTargetInput] = useState('8.8.8.8');
   const [packetSize, setPacketSize] = useState<number>(64);
   const [dscpMark, setDscpMark] = useState<string>('CS0');
   const [isLiveProbing, setIsLiveProbing] = useState(false);
   const [cycleCounter, setCycleCounter] = useState(1);
+  const [isExecutingProbe, setIsExecutingProbe] = useState(false);
 
   // Settings State with LocalStorage Persistence
   const [settings, setSettings] = useState<UserSettings>(() => {
@@ -97,29 +98,49 @@ export default function App() {
   // Live Probing Interval Ref
   const probeIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Handle continuous live MTR updates
+  // Trigger initial real traceroute on mount
+  useEffect(() => {
+    executeProbe(targetInput, 1);
+  }, []);
+
+  const executeProbe = async (target: string, cycle: number) => {
+    setIsExecutingProbe(true);
+    try {
+      const realSession = await fetchRealTraceroute(target, 3, 14, packetSize, dscpMark);
+      realSession.cycleCount = cycle;
+      realSession.isLiveProbing = isLiveProbing;
+      setSession(realSession);
+
+      // Sound Alerts
+      if (settings.soundAlerts) {
+        if (realSession.overallLossPercent >= settings.lossThresholdPercent) {
+          soundEngine.playCriticalAlarm();
+        } else if (realSession.overallLossPercent > 0 || realSession.overallAvgRtt > settings.latencyThresholdMs) {
+          soundEngine.playWarningChime();
+        } else {
+          soundEngine.playProbePing();
+        }
+      }
+    } catch (err) {
+      console.warn('Real probe fallback:', err);
+      const fallbackSession = generateTraceroutePath(target, 'healthy', cycle);
+      fallbackSession.isLiveProbing = isLiveProbing;
+      setSession(fallbackSession);
+    } finally {
+      setIsExecutingProbe(false);
+    }
+  };
+
+  // Continuous live MTR probing loop
   useEffect(() => {
     if (isLiveProbing) {
       probeIntervalRef.current = setInterval(() => {
         setCycleCounter(prev => {
           const nextCycle = prev + 1;
-          const newSession = generateTraceroutePath(targetInput, currentScenario as any, nextCycle);
-          setSession(newSession);
-
-          // Audio feedback if enabled
-          if (settings.soundAlerts) {
-            if (newSession.overallLossPercent >= settings.lossThresholdPercent) {
-              soundEngine.playCriticalAlarm();
-            } else if (newSession.overallLossPercent > 0 || newSession.overallAvgRtt > settings.latencyThresholdMs) {
-              soundEngine.playWarningChime();
-            } else {
-              soundEngine.playProbePing();
-            }
-          }
-
+          executeProbe(targetInput, nextCycle);
           return nextCycle;
         });
-      }, settings.refreshIntervalMs || 1500);
+      }, Math.max(2000, settings.refreshIntervalMs || 2000));
     } else {
       if (probeIntervalRef.current) clearInterval(probeIntervalRef.current);
     }
@@ -127,7 +148,7 @@ export default function App() {
     return () => {
       if (probeIntervalRef.current) clearInterval(probeIntervalRef.current);
     };
-  }, [isLiveProbing, targetInput, currentScenario, settings.refreshIntervalMs, settings.soundAlerts, settings.lossThresholdPercent, settings.latencyThresholdMs]);
+  }, [isLiveProbing, targetInput, packetSize, dscpMark, settings.refreshIntervalMs, settings.soundAlerts, settings.lossThresholdPercent, settings.latencyThresholdMs]);
 
   const handleToggleLive = () => {
     setIsLiveProbing(prev => !prev);
@@ -136,30 +157,18 @@ export default function App() {
   const handleRunSingleCycle = () => {
     const nextCycle = cycleCounter + 1;
     setCycleCounter(nextCycle);
-    const newSession = generateTraceroutePath(targetInput, currentScenario as any, nextCycle);
-    setSession(newSession);
-
-    if (settings.soundAlerts) {
-      if (newSession.overallLossPercent >= settings.lossThresholdPercent) {
-        soundEngine.playCriticalAlarm();
-      } else if (newSession.overallLossPercent > 0) {
-        soundEngine.playWarningChime();
-      } else {
-        soundEngine.playProbePing();
-      }
-    }
+    executeProbe(targetInput, nextCycle);
   };
 
   const handleSelectPreset = (preset: NetworkPreset) => {
-    setCurrentScenario(preset.simulatedScenario);
     setTargetInput(preset.target);
-    setSession(generateTraceroutePath(preset.target, preset.simulatedScenario, 1));
+    executeProbe(preset.target, 1);
   };
 
   const handleCustomTargetSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!targetInput.trim()) return;
-    setSession(generateTraceroutePath(targetInput.trim(), currentScenario as any, 1));
+    executeProbe(targetInput.trim(), 1);
   };
 
   const handleScanSubnet = (cidr: string) => {
@@ -168,7 +177,7 @@ export default function App() {
 
   const handleTraceHost = (ip: string) => {
     setTargetInput(ip);
-    setSession(generateTraceroutePath(ip, 'healthy', 1));
+    executeProbe(ip, 1);
     setActiveTab('mtr');
   };
 
@@ -240,7 +249,6 @@ export default function App() {
           onRunSingleCycle={handleRunSingleCycle}
           onSelectPreset={handleSelectPreset}
           onExportPdf={handleExportPdf}
-          currentScenario={currentScenario}
           theme={settings.theme}
           onCycleTheme={handleCycleTheme}
           onOpenSettings={() => setActiveTab('settings')}

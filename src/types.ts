@@ -177,7 +177,6 @@ export interface NetworkPreset {
   description: string;
   category: 'Cloud' | 'DNS / CDN' | 'Enterprise Core' | 'Financial IXP' | 'Telephony / SIP';
   iconName: string;
-  simulatedScenario: 'healthy' | 'peering_congestion' | 'transatlantic_jump' | 'rate_limited_hop' | 'cloud_edge_loss' | 'severe_packet_loss';
 }
 
 // -------------------------------------------------------------

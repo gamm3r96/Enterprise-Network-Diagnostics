@@ -10,7 +10,6 @@ interface HeaderProps {
   onRunSingleCycle: () => void;
   onSelectPreset: (preset: NetworkPreset) => void;
   onExportPdf: () => void;
-  currentScenario: string;
   theme: ThemeId;
   onCycleTheme: () => void;
   onOpenSettings: () => void;
@@ -20,50 +19,44 @@ export const PRESETS: NetworkPreset[] = [
   {
     name: 'Google Public DNS',
     target: '8.8.8.8',
-    description: 'High-availability global Anycast DNS (Healthy Baseline)',
+    description: 'Global Anycast DNS (AS15169 Google LLC)',
     category: 'DNS / CDN',
-    iconName: 'Globe',
-    simulatedScenario: 'healthy'
+    iconName: 'Globe'
   },
   {
-    name: 'Cloudflare Edge 1.1.1.1',
+    name: 'Cloudflare Anycast Edge',
     target: '1.1.1.1',
-    description: 'Fast anycast routing with ICMP rate-limited intermediate node',
+    description: 'High-speed Anycast Edge (AS13335 Cloudflare)',
     category: 'DNS / CDN',
-    iconName: 'Zap',
-    simulatedScenario: 'rate_limited_hop'
+    iconName: 'Zap'
   },
   {
-    name: 'Transatlantic Subsea Link (London -> NY)',
-    target: '142.250.228.18',
-    description: 'Inter-continental fiber showing +78ms propagation delay jump',
-    category: 'Enterprise Core',
-    iconName: 'Compass',
-    simulatedScenario: 'transatlantic_jump'
+    name: 'Quad9 Secure Resolver',
+    target: '9.9.9.9',
+    description: 'Global Threat Blocking DNS (AS19281 Quad9)',
+    category: 'DNS / CDN',
+    iconName: 'Shield'
   },
   {
-    name: 'Equinix IXP Peering Congestion',
-    target: '198.32.160.10',
-    description: 'Degraded BGP peering exchange causing jitter and 9% packet loss',
-    category: 'Financial IXP',
-    iconName: 'AlertCircle',
-    simulatedScenario: 'peering_congestion'
+    name: 'Cisco OpenDNS Anycast',
+    target: '208.67.222.222',
+    description: 'Enterprise Edge Resolver (AS36692 Cisco)',
+    category: 'DNS / CDN',
+    iconName: 'Compass'
   },
   {
-    name: 'Cloud VPC Ingress Flap',
-    target: '52.95.110.1',
-    description: 'Carrier transit path flapping with severe packet loss (18%)',
+    name: 'Microsoft Global WAN Edge',
+    target: '13.107.4.50',
+    description: 'Azure Public Backbone Edge (AS8075 Microsoft)',
     category: 'Cloud',
-    iconName: 'Cloud',
-    simulatedScenario: 'severe_packet_loss'
+    iconName: 'Cloud'
   },
   {
-    name: 'Internal SD-WAN Core Gateway',
-    target: '10.200.1.1',
-    description: 'Private RFC 1918 enterprise backbone with low latency',
+    name: 'Local Interface / Gateway',
+    target: '127.0.0.1',
+    description: 'Host Loopback & Local Stack Routing',
     category: 'Enterprise Core',
-    iconName: 'Server',
-    simulatedScenario: 'healthy'
+    iconName: 'Server'
   }
 ];
 
@@ -74,7 +67,6 @@ export const Header: React.FC<HeaderProps> = ({
   onRunSingleCycle,
   onSelectPreset,
   onExportPdf,
-  currentScenario,
   theme,
   onCycleTheme,
   onOpenSettings

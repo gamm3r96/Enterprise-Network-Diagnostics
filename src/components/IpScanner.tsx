@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { HostScanResult, ScanSession } from '../types';
+import { fetchRealIpScan } from '../utils/realNetworkApi';
 import { generateIpRangeScan } from '../utils/networkCalc';
 import {
   Scan,
@@ -61,23 +62,31 @@ export const IpScanner: React.FC<IpScannerProps> = ({
     }
   };
 
-  const handleStartScan = () => {
+  const handleStartScan = async () => {
     setIsScanning(true);
-    setProgress(10);
+    setProgress(15);
 
-    const interval = setInterval(() => {
-      setProgress((prev) => {
-        if (prev >= 90) {
-          clearInterval(interval);
-          const results = generateIpRangeScan(rangeInput, selectedPorts);
-          setScanResults(results);
-          setIsScanning(false);
-          if (onScanComplete) onScanComplete(results);
-          return 100;
-        }
-        return prev + 25;
-      });
-    }, 200);
+    try {
+      // Periodic progress ticker while backend scan runs
+      const progressTimer = setInterval(() => {
+        setProgress(p => (p < 85 ? p + 15 : p));
+      }, 400);
+
+      const results = await fetchRealIpScan(rangeInput, selectedPorts);
+      clearInterval(progressTimer);
+      setProgress(100);
+      setScanResults(results);
+      if (onScanComplete) onScanComplete(results);
+    } catch (err: any) {
+      console.warn('Real IP scan fallback:', err);
+      // Fallback calculation if server error
+      const results = generateIpRangeScan(rangeInput, selectedPorts);
+      setScanResults(results);
+      if (onScanComplete) onScanComplete(results);
+    } finally {
+      setProgress(100);
+      setIsScanning(false);
+    }
   };
 
   const activeCount = scanResults.filter(h => h.status !== 'OFFLINE').length;

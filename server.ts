@@ -106,7 +106,7 @@ app.post("/api/network/dns", async (req, res) => {
         cnames.forEach(r => records.push({ type: "CNAME", name: clean, data: r, ttl: 300, provider: "System Resolver" }));
       } else if (recordType === "CAA") {
         const caas = await dnsPromises.resolveCaa(clean);
-        caas.forEach(r => records.push({ type: "CAA", name: clean, data: `${r.critical ? '1' : '0'} ${r.issue || r.issuewild || 'iodef'} "${r.value || ''}"`, ttl: 86400, provider: "System Resolver" }));
+        caas.forEach((r: any) => records.push({ type: "CAA", name: clean, data: `${r.critical ? '1' : '0'} ${r.issue || r.issuewild || r.iodef || 'issue'} "${r.value || r.issue || r.issuewild || ''}"`, ttl: 86400, provider: "System Resolver" }));
       } else {
         const anyRecs = await dnsPromises.resolveAny(clean);
         anyRecs.forEach((r: any) => records.push({ type: r.type || recordType, name: clean, data: r.value || r.address || JSON.stringify(r), ttl: r.ttl || 300, provider: "System Resolver" }));
