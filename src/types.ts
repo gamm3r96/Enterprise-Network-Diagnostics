@@ -36,9 +36,16 @@ export interface HopDiagnostic {
   host: string;
   asn?: string;
   asnOrg?: string;
+  isp?: string;
   city?: string;
+  region?: string;
   country?: string;
   countryCode?: string;
+  latitude?: number;
+  longitude?: number;
+  timezone?: string;
+  isPrivate?: boolean;
+  ipType?: string;
   mplsLabel?: string;
   sentCount: number;
   recvCount: number;

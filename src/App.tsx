@@ -440,6 +440,7 @@ export default function App() {
             <HopTable
               hops={session.hops}
               probeCount={session.probeCount}
+              onEnrichHops={(enrichedHops) => setSession(prev => ({ ...prev, hops: enrichedHops }))}
             />
           </div>
         )}

@@ -118,20 +118,25 @@ export function generateEnterprisePdfReport(options: PdfExportOptions): jsPDF {
 
   currentY += 20;
 
-  const hopTableData = session.hops.map(h => [
-    h.hop.toString(),
-    h.ip,
-    h.host || 'Unknown',
-    `${h.asn || '-'} (${h.asnOrg ? h.asnOrg.substring(0, 18) : '-'})`,
-    `${h.sentCount}/${h.recvCount}`,
-    `${h.lossPercent}%`,
-    `${h.lastRtt} ms`,
-    `${h.avgRtt} ms`,
-    `${h.bestRtt} ms`,
-    `${h.worstRtt} ms`,
-    `${h.jitter} ms`,
-    h.status === 'rate-limited' ? 'Rate-Ltd (CoPP)' : h.lossPercent > 5 ? 'High Loss' : h.status === 'warning' ? 'Elevated' : 'Optimal'
-  ]);
+  const hopTableData = session.hops.map(h => {
+    const ispName = h.isp || h.asnOrg || (h.isPrivate ? 'Internal LAN' : '-');
+    const geoStr = h.countryCode ? `[${h.countryCode}] ` : '';
+    const loc = h.city ? `${h.city}, ${h.country || ''}` : (h.country || '');
+    return [
+      h.hop.toString(),
+      h.ip,
+      h.host || 'Unknown',
+      `${geoStr}${ispName.substring(0, 20)} (${h.asn || 'LAN'})${loc ? `\n${loc.substring(0, 22)}` : ''}`,
+      `${h.sentCount}/${h.recvCount}`,
+      `${h.lossPercent}%`,
+      `${h.lastRtt} ms`,
+      `${h.avgRtt} ms`,
+      `${h.bestRtt} ms`,
+      `${h.worstRtt} ms`,
+      `${h.jitter} ms`,
+      h.status === 'rate-limited' ? 'Rate-Ltd (CoPP)' : h.lossPercent > 5 ? 'High Loss' : h.status === 'warning' ? 'Elevated' : 'Optimal'
+    ];
+  });
 
   autoTable(doc, {
     startY: currentY,

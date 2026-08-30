@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { HopDiagnostic } from '../types';
 import { Server, Globe, Shield, ArrowRight, AlertTriangle, CheckCircle, Info, Zap, MapPin } from 'lucide-react';
+import { getCountryFlagEmoji } from '../utils/geoIp';
 
 interface HopVisualizerProps {
   hops: HopDiagnostic[];
@@ -48,7 +49,7 @@ export const HopVisualizer: React.FC<HopVisualizerProps> = ({
             </span>
           </div>
           <p className="text-xs text-slate-400 mt-0.5">
-            Interactive routing pipeline. Click any hop node to inspect carrier ASN, MPLS labels, and telemetry.
+            Interactive routing pipeline. Click any hop node to inspect carrier ASN, ISP, geographic location, and telemetry.
           </p>
         </div>
 
@@ -75,25 +76,26 @@ export const HopVisualizer: React.FC<HopVisualizerProps> = ({
           {hops.map((hop, idx) => {
             const Icon = getNodeIcon(hop.nodeType);
             const isLast = idx === hops.length - 1;
-            const hasLoss = hop.lossPercent > 0;
             const isSelected = selectedHop?.hop === hop.hop;
+            const flagEmoji = getCountryFlagEmoji(hop.countryCode);
+            const ispLabel = hop.isp || hop.asnOrg || 'Carrier Transit';
 
             return (
               <React.Fragment key={hop.hop}>
                 {/* Node Box */}
                 <div
                   onClick={() => setSelectedHop(hop)}
-                  className={`cursor-pointer transition-all duration-200 p-3.5 rounded-2xl border backdrop-blur-md flex flex-col items-center justify-between min-w-[140px] max-w-[150px] hover:scale-102 hover:shadow-xl ${
+                  className={`cursor-pointer transition-all duration-200 p-3.5 rounded-2xl border backdrop-blur-md flex flex-col items-center justify-between min-w-[145px] max-w-[155px] hover:scale-102 hover:shadow-xl ${
                     isSelected ? 'ring-2 ring-cyan-400 border-cyan-400 bg-cyan-500/15 shadow-[0_0_20px_rgba(6,182,212,0.25)]' : getStatusBorder(hop.status, hop.lossPercent)
                   }`}
                 >
-                  {/* Top Bar: Hop # & Node Type */}
+                  {/* Top Bar: Hop # & Country Flag */}
                   <div className="w-full flex items-center justify-between gap-1 mb-1.5">
                     <span className="text-[10px] font-mono font-bold bg-black/40 px-2 py-0.5 rounded-md text-slate-300 border border-white/5">
                       #{hop.hop}
                     </span>
-                    <span className="text-[9px] font-semibold uppercase tracking-wider text-slate-400 truncate">
-                      {hop.nodeType}
+                    <span className="text-sm select-none" title={hop.country || 'Location'}>
+                      {flagEmoji}
                     </span>
                   </div>
 
@@ -111,8 +113,8 @@ export const HopVisualizer: React.FC<HopVisualizerProps> = ({
                     <div className="text-xs font-mono font-bold text-white truncate w-full" title={hop.ip}>
                       {hop.ip}
                     </div>
-                    <div className="text-[10px] text-slate-400 truncate w-full mt-0.5" title={hop.host}>
-                      {hop.host || 'Unknown Host'}
+                    <div className="text-[10px] text-cyan-300/90 truncate w-full font-medium mt-0.5" title={ispLabel}>
+                      {ispLabel}
                     </div>
                   </div>
 
@@ -183,8 +185,8 @@ export const HopVisualizer: React.FC<HopVisualizerProps> = ({
         <div className="mt-5 p-5 rounded-2xl bg-black/30 backdrop-blur-xl border border-white/10 animate-in fade-in slide-in-from-top-2 shadow-2xl">
           <div className="flex items-start justify-between gap-4">
             <div className="flex items-center gap-3.5">
-              <div className="w-11 h-11 rounded-xl bg-cyan-500/15 border border-cyan-400/30 flex items-center justify-center text-cyan-300 font-mono font-bold text-sm backdrop-blur-md shadow-[0_0_12px_rgba(6,182,212,0.2)]">
-                #{selectedHop.hop}
+              <div className="w-11 h-11 rounded-xl bg-cyan-500/15 border border-cyan-400/30 flex items-center justify-center text-xl backdrop-blur-md shadow-[0_0_12px_rgba(6,182,212,0.2)]">
+                {getCountryFlagEmoji(selectedHop.countryCode)}
               </div>
               <div>
                 <div className="flex items-center gap-2">
@@ -194,15 +196,16 @@ export const HopVisualizer: React.FC<HopVisualizerProps> = ({
                     {selectedHop.nodeType}
                   </span>
                 </div>
-                <div className="flex items-center gap-3.5 text-xs text-slate-400 mt-1">
+                <div className="flex flex-wrap items-center gap-3.5 text-xs text-slate-400 mt-1">
                   <span className="flex items-center gap-1.5">
                     <Globe className="w-3.5 h-3.5 text-cyan-400" />
-                    {selectedHop.asn || 'Private ASN'} ({selectedHop.asnOrg || 'Enterprise Internal'})
+                    <span className="font-semibold text-slate-200">{selectedHop.isp || selectedHop.asnOrg || 'ISP Provider'}</span>
+                    <span className="font-mono text-cyan-300">({selectedHop.asn || 'Private ASN'})</span>
                   </span>
-                  {selectedHop.city && (
+                  {selectedHop.country && (
                     <span className="flex items-center gap-1.5">
                       <MapPin className="w-3.5 h-3.5 text-amber-400" />
-                      {selectedHop.city}, {selectedHop.country}
+                      {selectedHop.city ? `${selectedHop.city}, ` : ''}{selectedHop.country}
                     </span>
                   )}
                   {selectedHop.mplsLabel && (
@@ -286,3 +289,4 @@ export const HopVisualizer: React.FC<HopVisualizerProps> = ({
     </div>
   );
 };
+

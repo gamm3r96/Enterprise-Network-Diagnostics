@@ -30,9 +30,15 @@ export interface RealHopInfo {
   host: string;
   asn: string;
   asnOrg: string;
+  isp?: string;
   city: string;
+  region?: string;
   country: string;
   countryCode: string;
+  latitude?: number;
+  longitude?: number;
+  timezone?: string;
+  isPrivate?: boolean;
   sentCount: number;
   recvCount: number;
   lossPercent: number;
@@ -74,18 +80,35 @@ export interface RealTracerouteResult {
   cycleCount: number;
 }
 
+export interface IpGeoDetails {
+  asn: string;
+  org: string;
+  isp: string;
+  city: string;
+  region: string;
+  country: string;
+  countryCode: string;
+  latitude?: number;
+  longitude?: number;
+  timezone?: string;
+  isPrivate?: boolean;
+}
+
 // In-memory cache for IP ASN / Geolocation to avoid rate limits
-const ipGeoCache = new Map<string, { asn: string; org: string; city: string; country: string; countryCode: string }>();
+const ipGeoCache = new Map<string, IpGeoDetails>();
 
 // Resolve IP ASN & Geolocation using public RDAP / IP APIs with fast timeout
-export async function lookupIpInfo(ip: string): Promise<{ asn: string; org: string; city: string; country: string; countryCode: string }> {
+export async function lookupIpInfo(ip: string): Promise<IpGeoDetails> {
   if (ip === "*" || ip === "127.0.0.1" || ip.startsWith("10.") || ip.startsWith("192.168.") || (ip.startsWith("172.") && parseInt(ip.split(".")[1], 10) >= 16 && parseInt(ip.split(".")[1], 10) <= 31)) {
     return {
       asn: "AS64512",
       org: "Private / Local Network",
+      isp: "Internal LAN / Private Gateway",
       city: "Local Edge",
+      region: "Internal Intranet",
       country: "Private Network",
-      countryCode: "LAN"
+      countryCode: "LAN",
+      isPrivate: true
     };
   }
 
@@ -102,12 +125,18 @@ export async function lookupIpInfo(ip: string): Promise<{ asn: string; org: stri
     if (res.ok) {
       const data = await res.json();
       if (data && data.success !== false) {
-        const info = {
+        const info: IpGeoDetails = {
           asn: data.connection?.asn ? `AS${data.connection.asn}` : "AS-Transit",
-          org: data.connection?.isp || data.connection?.org || "Global Transit",
+          org: data.connection?.org || data.connection?.isp || "Global Transit",
+          isp: data.connection?.isp || data.connection?.org || "Global Internet Carrier",
           city: data.city || "Edge Gateway",
+          region: data.region || data.region_code || "",
           country: data.country || "Global",
-          countryCode: data.country_code || "UN"
+          countryCode: data.country_code || "UN",
+          latitude: data.latitude,
+          longitude: data.longitude,
+          timezone: data.timezone?.id || data.timezone?.abbr,
+          isPrivate: false
         };
         ipGeoCache.set(ip, info);
         return info;
@@ -118,24 +147,27 @@ export async function lookupIpInfo(ip: string): Promise<{ asn: string; org: stri
   }
 
   // Known Public DNS / CDN heuristics
-  let info = {
+  let info: IpGeoDetails = {
     asn: "AS-Transit",
     org: "Tier-1 Backbone Provider",
+    isp: "Global Internet Carrier",
     city: "Regional Core",
+    region: "Backbone Transit",
     country: "Global Transit",
-    countryCode: "GL"
+    countryCode: "GL",
+    isPrivate: false
   };
 
   if (ip.startsWith("8.8.") || ip.startsWith("142.250.") || ip.startsWith("172.217.") || ip.startsWith("108.170.")) {
-    info = { asn: "AS15169", org: "Google LLC", city: "Global Edge", country: "United States", countryCode: "US" };
+    info = { asn: "AS15169", org: "Google LLC", isp: "Google Public Backbone", city: "Global Edge", region: "California", country: "United States", countryCode: "US", latitude: 37.422, longitude: -122.084, timezone: "America/Los_Angeles", isPrivate: false };
   } else if (ip.startsWith("1.1.") || ip.startsWith("1.0.") || ip.startsWith("104.16.") || ip.startsWith("104.17.")) {
-    info = { asn: "AS13335", org: "Cloudflare Inc.", city: "Anycast Edge", country: "United States", countryCode: "US" };
+    info = { asn: "AS13335", org: "Cloudflare Inc.", isp: "Cloudflare Anycast CDN", city: "Anycast Edge", region: "California", country: "United States", countryCode: "US", latitude: 37.7749, longitude: -122.4194, timezone: "America/Los_Angeles", isPrivate: false };
   } else if (ip.startsWith("9.9.9.") || ip.startsWith("149.112.")) {
-    info = { asn: "AS19281", org: "Quad9 Security", city: "Global Anycast", country: "Switzerland", countryCode: "CH" };
+    info = { asn: "AS19281", org: "Quad9 Security", isp: "Quad9 Global Anycast", city: "Global Anycast", region: "Zurich", country: "Switzerland", countryCode: "CH", latitude: 47.3769, longitude: 8.5417, timezone: "Europe/Zurich", isPrivate: false };
   } else if (ip.startsWith("208.67.")) {
-    info = { asn: "AS36692", org: "Cisco OpenDNS", city: "Anycast Edge", country: "United States", countryCode: "US" };
+    info = { asn: "AS36692", org: "Cisco OpenDNS", isp: "Cisco Umbrella / OpenDNS", city: "Anycast Edge", region: "California", country: "United States", countryCode: "US", latitude: 37.7749, longitude: -122.4194, timezone: "America/Los_Angeles", isPrivate: false };
   } else if (ip.startsWith("13.") || ip.startsWith("20.") || ip.startsWith("52.")) {
-    info = { asn: "AS8075", org: "Microsoft / Azure Network", city: "Cloud Gateway", country: "United States", countryCode: "US" };
+    info = { asn: "AS8075", org: "Microsoft / Azure Network", isp: "Microsoft Global Network", city: "Cloud Gateway", region: "Washington", country: "United States", countryCode: "US", latitude: 47.6062, longitude: -122.3321, timezone: "America/Los_Angeles", isPrivate: false };
   }
 
   ipGeoCache.set(ip, info);
@@ -438,9 +470,15 @@ export async function executeRealTraceroute(
       host: hostName,
       asn: geo.asn,
       asnOrg: geo.org,
+      isp: geo.isp || geo.org,
       city: geo.city,
+      region: geo.region,
       country: geo.country,
       countryCode: geo.countryCode,
+      latitude: geo.latitude,
+      longitude: geo.longitude,
+      timezone: geo.timezone,
+      isPrivate: geo.isPrivate,
       sentCount: sent,
       recvCount: recv,
       lossPercent,

@@ -198,6 +198,43 @@ app.post("/api/network/bgp", async (req, res) => {
   }
 });
 
+// 6. Real Geo-IP & ISP Lookup Endpoint
+app.post("/api/network/geoip", async (req, res) => {
+  try {
+    const { ip = "8.8.8.8" } = req.body;
+    const cleanIp = String(ip).trim().replace(/^https?:\/\//, '').replace(/\/.*$/, '');
+    const info = await lookupIpInfo(cleanIp);
+    return res.json({
+      ip: cleanIp,
+      ...info
+    });
+  } catch (error: any) {
+    console.error("Geo-IP lookup error:", error);
+    return res.status(500).json({ error: error.message || "Failed to lookup Geo-IP info" });
+  }
+});
+
+// 7. Batch Geo-IP & ISP Lookup Endpoint
+app.post("/api/network/geoip/batch", async (req, res) => {
+  try {
+    const { ips = [] } = req.body;
+    if (!Array.isArray(ips)) {
+      return res.status(400).json({ error: "Expected 'ips' array" });
+    }
+    const resultsList = await Promise.all(
+      ips.slice(0, 30).map(async (rawIp: string) => {
+        const clean = String(rawIp).trim();
+        const info = await lookupIpInfo(clean);
+        return { ip: clean, ...info };
+      })
+    );
+    return res.json({ results: resultsList });
+  } catch (error: any) {
+    console.error("Batch Geo-IP lookup error:", error);
+    return res.status(500).json({ error: error.message || "Failed to lookup batch Geo-IP info" });
+  }
+});
+
 // Gemini AI Root-Cause Diagnostic Analysis
 app.post("/api/gemini/analyze-network", async (req, res) => {
   try {
