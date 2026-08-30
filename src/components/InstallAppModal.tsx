@@ -57,7 +57,10 @@ export const InstallAppModal: React.FC<InstallAppModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-fadeIn">
+    <div 
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-fadeIn"
+      onClick={onClose}
+    >
       <div
         className="relative w-full max-w-2xl bg-slate-900/95 border border-cyan-500/30 rounded-2xl shadow-2xl shadow-cyan-950/80 overflow-hidden text-slate-100 max-h-[90vh] flex flex-col"
         onClick={(e) => e.stopPropagation()}
@@ -85,7 +88,7 @@ export const InstallAppModal: React.FC<InstallAppModalProps> = ({
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 transition"
+            className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 transition cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
@@ -93,6 +96,20 @@ export const InstallAppModal: React.FC<InstallAppModalProps> = ({
 
         {/* Scrollable Body */}
         <div className="p-6 overflow-y-auto space-y-6">
+          {/* Action Feedback Banner */}
+          {installStatus === 'success' && (
+            <div className="p-3.5 rounded-xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-200 text-xs flex items-center gap-2 animate-fadeIn">
+              <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0" />
+              <span>Installation approved! NetTrace is now installed on your system.</span>
+            </div>
+          )}
+          {installStatus === 'manual' && (
+            <div className="p-3.5 rounded-xl bg-cyan-500/20 border border-cyan-500/40 text-cyan-200 text-xs flex items-center gap-2 animate-fadeIn">
+              <Sparkles className="w-4 h-4 text-cyan-400 flex-shrink-0" />
+              <span>Select your operating system tab below for the direct browser install steps.</span>
+            </div>
+          )}
+
           {/* Status Banner */}
           {isStandalone || isInstalled ? (
             <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-start gap-3">
