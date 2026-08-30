@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { UserSettings, ThemeId, DiagnosticSession } from '../types';
 import { soundEngine } from '../utils/audioAlert';
+import { NetworkTooltip } from './NetworkTooltip';
 import {
   Palette,
   Sliders,
@@ -277,10 +278,13 @@ export const Settings: React.FC<SettingsProps> = ({
 
           {/* Default Packet Size */}
           <div className="bg-black/30 p-4 rounded-xl border border-white/10">
-            <label className="text-xs font-bold text-slate-200 block mb-1">
-              Default Packet Payload Size
-            </label>
-            <p className="text-[11px] text-slate-400 mb-3">Payload bytes per ICMP/UDP echo request</p>
+            <div className="flex items-center justify-between mb-1">
+              <label className="text-xs font-bold text-slate-200 block">
+                Default Packet Payload Size (Frame MTU)
+              </label>
+              <NetworkTooltip topic="frame_mtu" position="top" />
+            </div>
+            <p className="text-[11px] text-slate-400 mb-3">Payload bytes per ICMP/UDP echo request (PMTUD testing)</p>
             <select
               value={settings.defaultPacketSize}
               onChange={(e) => {
@@ -289,8 +293,8 @@ export const Settings: React.FC<SettingsProps> = ({
               }}
               className="w-full bg-slate-900 text-xs text-white border border-white/15 rounded-lg px-3 py-2 focus:ring-1 focus:ring-cyan-400 focus:outline-none"
             >
-              <option value={64}>64 Bytes (RFC 792 Standard Ping)</option>
-              <option value={128}>128 Bytes</option>
+              <option value={64}>64 Bytes (RFC 792 Standard Ping / VoIP RTP)</option>
+              <option value={128}>128 Bytes (Compact Payload)</option>
               <option value={512}>512 Bytes (Medium Frame)</option>
               <option value={1472}>1,472 Bytes (Max IPv4 MTU Frame)</option>
               <option value={1500}>1,500 Bytes (Full MTU L2 Frame)</option>
@@ -299,10 +303,13 @@ export const Settings: React.FC<SettingsProps> = ({
 
           {/* DSCP Marking */}
           <div className="bg-black/30 p-4 rounded-xl border border-white/10">
-            <label className="text-xs font-bold text-slate-200 block mb-1">
-              QoS DSCP DiffServ Tag
-            </label>
-            <p className="text-[11px] text-slate-400 mb-3">IP header traffic classification</p>
+            <div className="flex items-center justify-between mb-1">
+              <label className="text-xs font-bold text-slate-200 block">
+                QoS DSCP DiffServ Tag
+              </label>
+              <NetworkTooltip topic="dscp_qos" position="top" />
+            </div>
+            <p className="text-[11px] text-slate-400 mb-3">IP header traffic classification & hardware queueing</p>
             <select
               value={settings.defaultDscp}
               onChange={(e) => {
@@ -312,10 +319,10 @@ export const Settings: React.FC<SettingsProps> = ({
               className="w-full bg-slate-900 text-xs text-white border border-white/15 rounded-lg px-3 py-2 focus:ring-1 focus:ring-cyan-400 focus:outline-none"
             >
               <option value="CS0">CS0 (Best Effort Default)</option>
-              <option value="EF">EF (Expedited Forwarding 46 - VoIP)</option>
-              <option value="AF41">AF41 (Assured Forwarding 34 - Video)</option>
-              <option value="AF31">AF31 (Assured Forwarding 26 - High Data)</option>
-              <option value="CS6">CS6 (Internetwork Control 48)</option>
+              <option value="EF">EF (Expedited Forwarding 46 - VoIP LLQ)</option>
+              <option value="AF41">AF41 (Assured Forwarding 34 - Video / Conf)</option>
+              <option value="AF31">AF31 (Assured Forwarding 26 - High Data / ERP)</option>
+              <option value="CS6">CS6 (Internetwork Control 48 - BGP / Routing)</option>
             </select>
           </div>
         </div>

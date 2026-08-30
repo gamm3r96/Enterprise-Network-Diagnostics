@@ -8,6 +8,7 @@ import {
   NetworkIncident
 } from '../types';
 import { PRESETS } from './Header';
+import { NetworkTooltip } from './NetworkTooltip';
 import {
   Activity,
   ShieldCheck,
@@ -280,16 +281,22 @@ export const Dashboard: React.FC<DashboardProps> = ({
         </div>
 
         {/* Path MTU & QoS */}
-        <div className="bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 p-4 shadow-sm relative overflow-hidden group hover:border-cyan-500/40 transition">
+        <div className="bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 p-4 shadow-sm relative overflow-visible group hover:border-cyan-500/40 transition">
           <div className="flex items-center justify-between">
-            <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Payload / MTU</span>
-            <ShieldCheck className="w-4 h-4 text-emerald-400" />
+            <div className="flex items-center gap-1.5">
+              <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Payload / MTU</span>
+              <NetworkTooltip topic="frame_mtu" position="bottom" />
+            </div>
+            <div className="flex items-center gap-1">
+              <NetworkTooltip topic="dscp_qos" position="bottom" />
+              <ShieldCheck className="w-4 h-4 text-emerald-400 ml-1" />
+            </div>
           </div>
           <div className="mt-2 text-2xl font-bold font-mono text-white tracking-tight">
             {session.packetSize} <span className="text-xs font-normal text-slate-400">B</span>
           </div>
           <div className="mt-1 text-[10px] text-slate-400">
-            MTU 1500 • DSCP: {session.dscp || 'CS0'}
+            MTU 1500 • DSCP: <strong className="text-cyan-300 font-mono">{session.dscp || 'CS0'}</strong>
           </div>
         </div>
       </div>

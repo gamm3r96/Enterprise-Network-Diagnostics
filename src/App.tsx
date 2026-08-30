@@ -25,6 +25,7 @@ import { AdvancedTools } from './components/AdvancedTools';
 import { ReportViewer } from './components/ReportViewer';
 import { AiTroubleshooter } from './components/AiTroubleshooter';
 import { Settings, THEMES } from './components/Settings';
+import { NetworkTooltip } from './components/NetworkTooltip';
 import { Activity, ShieldAlert, Zap, Globe, Server, Play, Pause, RefreshCw, Download } from 'lucide-react';
 
 const DEFAULT_SETTINGS: UserSettings = {
@@ -298,37 +299,43 @@ export default function App() {
                     />
                   </div>
 
-                  <div className="w-32">
-                    <label className="block text-[10px] font-bold text-slate-300 uppercase tracking-wider mb-1.5">
-                      Frame MTU
-                    </label>
+                  <div className="w-36">
+                    <div className="flex items-center justify-between mb-1.5">
+                      <label className="text-[10px] font-bold text-slate-300 uppercase tracking-wider">
+                        Frame MTU
+                      </label>
+                      <NetworkTooltip topic="frame_mtu" position="bottom" />
+                    </div>
                     <select
                       value={packetSize}
                       onChange={(e) => setPacketSize(Number(e.target.value))}
                       className="w-full bg-black/30 backdrop-blur-md border border-white/10 rounded-xl px-3 py-2 text-xs font-mono text-slate-200 focus:outline-none focus:border-cyan-400/50"
                     >
-                      <option value={64} className="bg-slate-900">64 Bytes</option>
+                      <option value={64} className="bg-slate-900">64 Bytes (VoIP / Echo)</option>
                       <option value={128} className="bg-slate-900">128 Bytes</option>
-                      <option value={512} className="bg-slate-900">512 Bytes</option>
-                      <option value={1472} className="bg-slate-900">1472 Bytes</option>
-                      <option value={1500} className="bg-slate-900">1500 Bytes</option>
+                      <option value={512} className="bg-slate-900">512 Bytes (Medium)</option>
+                      <option value={1472} className="bg-slate-900">1472 Bytes (Max IPv4)</option>
+                      <option value={1500} className="bg-slate-900">1500 Bytes (Full MTU)</option>
                     </select>
                   </div>
 
-                  <div className="w-36">
-                    <label className="block text-[10px] font-bold text-slate-300 uppercase tracking-wider mb-1.5">
-                      DSCP / ToS
-                    </label>
+                  <div className="w-40">
+                    <div className="flex items-center justify-between mb-1.5">
+                      <label className="text-[10px] font-bold text-slate-300 uppercase tracking-wider">
+                        DSCP / ToS
+                      </label>
+                      <NetworkTooltip topic="dscp_qos" position="bottom" />
+                    </div>
                     <select
                       value={dscpMark}
                       onChange={(e) => setDscpMark(e.target.value)}
                       className="w-full bg-black/30 backdrop-blur-md border border-white/10 rounded-xl px-3 py-2 text-xs font-mono text-slate-200 focus:outline-none focus:border-cyan-400/50"
                     >
                       <option value="CS0" className="bg-slate-900">CS0 (Best Effort)</option>
-                      <option value="EF" className="bg-slate-900">EF (VoIP / Audio)</option>
-                      <option value="AF41" className="bg-slate-900">AF41 (Video)</option>
+                      <option value="EF" className="bg-slate-900">EF (VoIP / Audio LLQ)</option>
+                      <option value="AF41" className="bg-slate-900">AF41 (Interactive Video)</option>
                       <option value="AF31" className="bg-slate-900">AF31 (Critical Data)</option>
-                      <option value="CS6" className="bg-slate-900">CS6 (Routing)</option>
+                      <option value="CS6" className="bg-slate-900">CS6 (Routing Control)</option>
                     </select>
                   </div>
                 </div>
