@@ -24,10 +24,10 @@
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
     <script>
-      if ('serviceWorker' in navigator && window.location.protocol === 'https:') {
+      if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
           navigator.serviceWorker.register('/sw.js').catch(err => {
-            console.log('SW registration failed: ', err);
+            console.log('SW registration note: ', err);
           });
         });
       }

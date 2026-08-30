@@ -1,5 +1,5 @@
 import React from 'react';
-import { Download, Play, Pause, RefreshCw, Server, ShieldCheck, AlertTriangle, Radio, Palette, Settings } from 'lucide-react';
+import { Download, Play, Pause, RefreshCw, Server, ShieldCheck, AlertTriangle, Radio, Palette, Settings, Smartphone, Command } from 'lucide-react';
 import { DiagnosticSession, NetworkPreset, ThemeId } from '../types';
 import appLogo from '../assets/images/app_logo_icon_1786884494503.jpg';
 
@@ -13,6 +13,10 @@ interface HeaderProps {
   theme: ThemeId;
   onCycleTheme: () => void;
   onOpenSettings: () => void;
+  onOpenInstallModal?: () => void;
+  onOpenShortcutsModal?: () => void;
+  isStandalone?: boolean;
+  isInstallable?: boolean;
 }
 
 export const PRESETS: NetworkPreset[] = [
@@ -69,7 +73,11 @@ export const Header: React.FC<HeaderProps> = ({
   onExportPdf,
   theme,
   onCycleTheme,
-  onOpenSettings
+  onOpenSettings,
+  onOpenInstallModal,
+  onOpenShortcutsModal,
+  isStandalone,
+  isInstallable
 }) => {
   return (
     <header className="bg-slate-950/40 backdrop-blur-xl border-b border-white/10 sticky top-0 z-40 shadow-[0_4px_30px_rgba(0,0,0,0.3)]">
@@ -90,6 +98,11 @@ export const Header: React.FC<HeaderProps> = ({
               <span className="px-2 py-0.5 text-xs font-semibold rounded-md bg-cyan-500/10 text-cyan-300 border border-cyan-400/30 backdrop-blur-sm">
                 v2.4 CCIE
               </span>
+              {isStandalone && (
+                <span className="px-2 py-0.5 text-[10px] font-mono font-bold rounded-md bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
+                  STANDALONE APP
+                </span>
+              )}
               <div className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-white/5 border border-white/10 backdrop-blur-md text-xs">
                 <span className={`w-2 h-2 rounded-full ${isLiveProbing ? 'bg-emerald-400 animate-pulse shadow-[0_0_8px_#34d399]' : 'bg-slate-400'}`} />
                 <span className="text-slate-200 font-medium text-[11px]">{isLiveProbing ? 'LIVE PROBING' : 'IDLE'}</span>
@@ -150,7 +163,7 @@ export const Header: React.FC<HeaderProps> = ({
           {/* Single Probe Button */}
           <button
             onClick={onRunSingleCycle}
-            title="Probe Path Once (Single Cycle)"
+            title="Probe Path Once (Single Cycle) [Hotkey: R]"
             className="px-3 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-slate-200 text-xs font-semibold flex items-center gap-1.5 border border-white/10 backdrop-blur-md transition shadow-sm"
           >
             <RefreshCw className="w-3.5 h-3.5 text-slate-300" />
@@ -160,6 +173,7 @@ export const Header: React.FC<HeaderProps> = ({
           {/* Live Continuous Probe Toggle */}
           <button
             onClick={onToggleLiveProbe}
+            title="Toggle Live Continuous MTR Probing [Hotkey: Space]"
             className={`px-3.5 py-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 backdrop-blur-md border transition shadow-lg ${
               isLiveProbing
                 ? 'bg-amber-500/20 hover:bg-amber-500/30 text-amber-200 border-amber-400/40 shadow-amber-950/40'
@@ -173,16 +187,40 @@ export const Header: React.FC<HeaderProps> = ({
           {/* Export PDF Report */}
           <button
             onClick={onExportPdf}
+            title="Export Enterprise Audit PDF [Hotkey: P]"
             className="px-3.5 py-2 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-200 text-xs font-semibold flex items-center gap-1.5 border border-emerald-400/40 backdrop-blur-md shadow-lg shadow-emerald-950/40 transition"
           >
             <Download className="w-3.5 h-3.5" />
             <span className="hidden sm:inline">Export PDF</span>
           </button>
 
+          {/* Install App Trigger Button */}
+          {onOpenInstallModal && (
+            <button
+              onClick={onOpenInstallModal}
+              title="Install NetTrace as Desktop / Mobile App [Hotkey: I]"
+              className="px-3 py-2 rounded-xl bg-gradient-to-r from-cyan-500/20 to-blue-500/20 hover:from-cyan-500/30 hover:to-blue-500/30 text-cyan-200 text-xs font-semibold flex items-center gap-1.5 border border-cyan-400/40 backdrop-blur-md shadow-sm transition"
+            >
+              <Smartphone className="w-3.5 h-3.5 text-cyan-300" />
+              <span className="hidden md:inline">Install App</span>
+            </button>
+          )}
+
+          {/* Keyboard Shortcuts Trigger Button */}
+          {onOpenShortcutsModal && (
+            <button
+              onClick={onOpenShortcutsModal}
+              title="CCIE Keyboard Shortcuts Reference [Hotkey: ?]"
+              className="p-2 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white border border-white/10 backdrop-blur-md transition shadow-sm"
+            >
+              <Command className="w-4 h-4" />
+            </button>
+          )}
+
           {/* Theme Quick Switcher */}
           <button
             onClick={onCycleTheme}
-            title={`Current Theme: ${theme}. Click to switch theme`}
+            title={`Current Theme: ${theme}. Click to switch theme [Hotkey: T]`}
             className="p-2 rounded-xl bg-white/5 hover:bg-white/10 text-cyan-300 border border-white/10 backdrop-blur-md transition shadow-sm"
           >
             <Palette className="w-4 h-4" />

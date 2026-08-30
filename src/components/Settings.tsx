@@ -20,7 +20,14 @@ import {
   Radio,
   SlidersHorizontal,
   FileCode,
-  HardDrive
+  HardDrive,
+  Smartphone,
+  Monitor,
+  Github,
+  Copy,
+  ExternalLink,
+  BookOpen,
+  Command
 } from 'lucide-react';
 
 interface SettingsProps {
@@ -28,6 +35,11 @@ interface SettingsProps {
   onUpdateSettings: (newSettings: Partial<UserSettings>) => void;
   onResetDefaults: () => void;
   session: DiagnosticSession;
+  onOpenInstallModal?: () => void;
+  onOpenShortcutsModal?: () => void;
+  isInstallable?: boolean;
+  isInstalled?: boolean;
+  isStandalone?: boolean;
 }
 
 export const THEMES: {
@@ -96,8 +108,20 @@ export const Settings: React.FC<SettingsProps> = ({
   settings,
   onUpdateSettings,
   onResetDefaults,
-  session
+  session,
+  onOpenInstallModal,
+  onOpenShortcutsModal,
+  isInstallable,
+  isInstalled,
+  isStandalone
 }) => {
+  const [copiedSection, setCopiedSection] = useState<string | null>(null);
+
+  const copyToClipboard = (text: string, id: string) => {
+    navigator.clipboard.writeText(text);
+    setCopiedSection(id);
+    setTimeout(() => setCopiedSection(null), 2000);
+  };
   const [saveToast, setSaveToast] = useState(false);
 
   const triggerToast = () => {
@@ -530,6 +554,197 @@ export const Settings: React.FC<SettingsProps> = ({
             <FileCode className="w-4 h-4" />
             Export Hop Telemetry (CSV)
           </button>
+        </div>
+      </div>
+
+      {/* 5. Progressive Web App (PWA) & Desktop Installation */}
+      <div className="bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 p-6 shadow-md">
+        <div className="flex items-center justify-between flex-wrap gap-3 mb-3">
+          <div className="flex items-center gap-2">
+            <Smartphone className="w-5 h-5 text-cyan-400" />
+            <h3 className="text-base font-bold text-white">App Installation & Desktop PWA</h3>
+          </div>
+          {isStandalone ? (
+            <span className="px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 text-xs font-mono font-bold flex items-center gap-1.5">
+              <CheckCircle2 className="w-3.5 h-3.5" />
+              Running in Standalone Window
+            </span>
+          ) : (
+            <span className="px-3 py-1 rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 text-xs font-mono font-bold flex items-center gap-1.5">
+              <Monitor className="w-3.5 h-3.5" />
+              Web Browser Mode
+            </span>
+          )}
+        </div>
+        <p className="text-xs text-slate-400 mb-4 leading-relaxed">
+          Install NetTrace Enterprise as a standalone desktop or mobile application. Enables offline calculations (Subnet Matrix, PMTUD MTU/MSS, VoIP MOS, TCP Mathis), eliminates browser tab clutter, and allows dedicated window launching from macOS Dock, Windows Taskbar, or Android/iOS Home Screens.
+        </p>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+          <div className="p-4 rounded-xl bg-black/40 border border-white/5 space-y-2">
+            <h4 className="text-xs font-bold text-slate-200 flex items-center gap-2">
+              <Zap className="w-4 h-4 text-cyan-400" />
+              Native Standalone Advantages
+            </h4>
+            <ul className="space-y-1 text-[11px] text-slate-400">
+              <li>• Dedicated window with zero URL bar distractions</li>
+              <li>• Works offline for calculation & protocol modeling</li>
+              <li>• Instant launch from Start Menu, Dock or Home Screen</li>
+              <li>• Native hotkeys without browser collision</li>
+            </ul>
+          </div>
+
+          <div className="p-4 rounded-xl bg-black/40 border border-white/5 space-y-2">
+            <h4 className="text-xs font-bold text-slate-200 flex items-center gap-2">
+              <HardDrive className="w-4 h-4 text-emerald-400" />
+              Offline Service Worker Cache
+            </h4>
+            <p className="text-[11px] text-slate-400 leading-relaxed">
+              Service worker caching is active. All interface assets, styling, formulas, and local diagnostic sessions remain accessible when disconnected from the WAN.
+            </p>
+          </div>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-3 pt-2">
+          {onOpenInstallModal && (
+            <button
+              onClick={onOpenInstallModal}
+              className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-xs shadow-lg shadow-cyan-500/30 transition cursor-pointer"
+            >
+              <Download className="w-4 h-4" />
+              {isStandalone ? 'View Installation Guide' : 'Open Installation Options'}
+            </button>
+          )}
+
+          {onOpenShortcutsModal && (
+            <button
+              onClick={onOpenShortcutsModal}
+              className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/15 text-slate-200 font-semibold text-xs border border-white/10 transition cursor-pointer"
+            >
+              <Command className="w-4 h-4 text-cyan-300" />
+              Keyboard Shortcuts Reference
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* 6. GitHub Repository & Metadata */}
+      <div className="bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 p-6 shadow-md">
+        <div className="flex items-center gap-2 mb-3">
+          <Github className="w-5 h-5 text-slate-200" />
+          <h3 className="text-base font-bold text-white">GitHub Repository & Project Metadata</h3>
+        </div>
+        <p className="text-xs text-slate-400 mb-4 leading-relaxed">
+          Official open-source repository details, project description for GitHub exports, tags, and documentation:
+        </p>
+
+        <div className="space-y-4">
+          {/* GitHub Repo Title & Description Box */}
+          <div className="p-4 rounded-xl bg-black/40 border border-white/10 space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-bold text-slate-300 uppercase tracking-wider">
+                GitHub Repository Description
+              </span>
+              <button
+                onClick={() =>
+                  copyToClipboard(
+                    "Enterprise network latency, packet loss, and hop-by-hop MTR diagnostic suite with Executive NOC dashboard, QoS DSCP & PMTUD MTU analysis, subnet performance matrix, IP range scanner, DoH DNS, TCP Mathis, BGP Looking Glass, VoIP MOS models, and exportable PDF SLA reports.",
+                    "desc"
+                  )
+                }
+                className="text-[11px] text-cyan-300 hover:text-cyan-200 flex items-center gap-1 font-mono transition"
+              >
+                {copiedSection === "desc" ? (
+                  <>
+                    <Check className="w-3.5 h-3.5 text-emerald-400" /> Copied!
+                  </>
+                ) : (
+                  <>
+                    <Copy className="w-3.5 h-3.5" /> Copy Description
+                  </>
+                )}
+              </button>
+            </div>
+            <p className="text-xs text-slate-300 font-mono bg-slate-950/80 p-3 rounded-lg border border-white/5 select-all leading-relaxed">
+              Enterprise network latency, packet loss, and hop-by-hop MTR diagnostic suite with Executive NOC dashboard, QoS DSCP & PMTUD MTU analysis, subnet performance matrix, IP range scanner, DoH DNS, TCP Mathis, BGP Looking Glass, VoIP MOS models, and exportable PDF SLA reports.
+            </p>
+          </div>
+
+          {/* GitHub Topics / Tags */}
+          <div className="p-4 rounded-xl bg-black/40 border border-white/10 space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-bold text-slate-300 uppercase tracking-wider">
+                GitHub Repository Topics / Tags
+              </span>
+              <button
+                onClick={() =>
+                  copyToClipboard(
+                    "network-diagnostics mtr traceroute ping packet-loss qos-dscp pmtu subnet-calculator ip-scanner bgp-looking-glass voip-mos dns-doh tcp-mathis pwa typescript react tailwindcss",
+                    "tags"
+                  )
+                }
+                className="text-[11px] text-cyan-300 hover:text-cyan-200 flex items-center gap-1 font-mono transition"
+              >
+                {copiedSection === "tags" ? (
+                  <>
+                    <Check className="w-3.5 h-3.5 text-emerald-400" /> Copied!
+                  </>
+                ) : (
+                  <>
+                    <Copy className="w-3.5 h-3.5" /> Copy Tags
+                  </>
+                )}
+              </button>
+            </div>
+            <div className="flex flex-wrap gap-1.5 pt-1">
+              {[
+                "network-diagnostics",
+                "mtr",
+                "traceroute",
+                "ping",
+                "packet-loss",
+                "qos-dscp",
+                "pmtu",
+                "subnet-calculator",
+                "ip-scanner",
+                "bgp-looking-glass",
+                "voip-mos",
+                "dns-doh",
+                "tcp-mathis",
+                "pwa",
+                "typescript",
+                "react",
+                "tailwindcss"
+              ].map((tag) => (
+                <span
+                  key={tag}
+                  className="px-2.5 py-1 rounded-md text-[11px] font-mono bg-cyan-500/10 text-cyan-300 border border-cyan-500/30"
+                >
+                  #{tag}
+                </span>
+              ))}
+            </div>
+          </div>
+
+          {/* Tech Stack & Architecture Spec */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+            <div className="p-3 rounded-xl bg-black/30 border border-white/5">
+              <span className="text-[10px] text-slate-400 uppercase font-semibold block">Frontend</span>
+              <span className="text-white font-mono font-bold">React 18 + TS</span>
+            </div>
+            <div className="p-3 rounded-xl bg-black/30 border border-white/5">
+              <span className="text-[10px] text-slate-400 uppercase font-semibold block">Styling</span>
+              <span className="text-white font-mono font-bold">Tailwind CSS 3.4</span>
+            </div>
+            <div className="p-3 rounded-xl bg-black/30 border border-white/5">
+              <span className="text-[10px] text-slate-400 uppercase font-semibold block">Diagnostics Engine</span>
+              <span className="text-white font-mono font-bold">Node.js Sockets + DNS</span>
+            </div>
+            <div className="p-3 rounded-xl bg-black/30 border border-white/5">
+              <span className="text-[10px] text-slate-400 uppercase font-semibold block">App Delivery</span>
+              <span className="text-white font-mono font-bold">Standalone PWA + SW</span>
+            </div>
+          </div>
         </div>
       </div>
     </div>

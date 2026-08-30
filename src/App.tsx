@@ -26,7 +26,11 @@ import { ReportViewer } from './components/ReportViewer';
 import { AiTroubleshooter } from './components/AiTroubleshooter';
 import { Settings, THEMES } from './components/Settings';
 import { NetworkTooltip } from './components/NetworkTooltip';
-import { Activity, ShieldAlert, Zap, Globe, Server, Play, Pause, RefreshCw, Download } from 'lucide-react';
+import { InstallAppModal } from './components/InstallAppModal';
+import { KeyboardShortcutsModal } from './components/KeyboardShortcutsModal';
+import { OfflineBanner } from './components/OfflineBanner';
+import { usePwaInstall } from './hooks/usePwaInstall';
+import { Activity, ShieldAlert, Zap, Globe, Server, Play, Pause, RefreshCw, Download, Smartphone, Command } from 'lucide-react';
 
 const DEFAULT_SETTINGS: UserSettings = {
   theme: 'cyber-slate',
@@ -52,6 +56,11 @@ export default function App() {
   const [isLiveProbing, setIsLiveProbing] = useState(false);
   const [cycleCounter, setCycleCounter] = useState(1);
   const [isExecutingProbe, setIsExecutingProbe] = useState(false);
+  const [isInstallModalOpen, setIsInstallModalOpen] = useState(false);
+  const [isShortcutsModalOpen, setIsShortcutsModalOpen] = useState(false);
+
+  // Progressive Web App Installation Hook
+  const pwa = usePwaInstall();
 
   // Settings State with LocalStorage Persistence
   const [settings, setSettings] = useState<UserSettings>(() => {
@@ -210,10 +219,68 @@ export default function App() {
     handleUpdateSettings({ theme: nextTheme });
   };
 
+  // CCIE Global Hotkeys Support
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement;
+      if (['INPUT', 'TEXTAREA', 'SELECT'].includes(target?.tagName) || target?.isContentEditable) {
+        return;
+      }
+
+      if (e.key === 'Escape') {
+        setIsInstallModalOpen(false);
+        setIsShortcutsModalOpen(false);
+      } else if (e.key === ' ') {
+        e.preventDefault();
+        handleToggleLive();
+      } else if (e.key === 'r' || e.key === 'R') {
+        e.preventDefault();
+        handleRunSingleCycle();
+      } else if (e.key === 'p' || e.key === 'P') {
+        e.preventDefault();
+        handleExportPdf();
+      } else if (e.key === 't' || e.key === 'T') {
+        e.preventDefault();
+        handleCycleTheme();
+      } else if (e.key === 'i' || e.key === 'I') {
+        e.preventDefault();
+        setIsInstallModalOpen(prev => !prev);
+      } else if (e.key === '?' || (e.shiftKey && e.key === '/')) {
+        e.preventDefault();
+        setIsShortcutsModalOpen(prev => !prev);
+      } else if (e.key === 'm' || e.key === 'M') {
+        e.preventDefault();
+        handleUpdateSettings({ soundAlerts: !settings.soundAlerts });
+      } else if (['1', '2', '3', '4', '5', '6', '7', '8'].includes(e.key)) {
+        const tabMap: Record<string, DiagnosticTab> = {
+          '1': 'dashboard',
+          '2': 'mtr',
+          '3': 'subnet',
+          '4': 'scanner',
+          '5': 'tools',
+          '6': 'report',
+          '7': 'ai',
+          '8': 'settings'
+        };
+        const selected = tabMap[e.key];
+        if (selected) {
+          e.preventDefault();
+          setActiveTab(selected);
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [settings.soundAlerts, settings.theme, isLiveProbing, cycleCounter, targetInput]);
+
   const packetLossCount = session.hops.filter(h => h.lossPercent > 0 && h.status !== 'rate-limited').length;
 
   return (
     <div className="min-h-screen relative overflow-x-hidden text-slate-100 flex flex-col font-sans selection:bg-cyan-500/30 selection:text-cyan-200">
+      {/* Offline Status Warning Bar */}
+      <OfflineBanner isOnline={pwa.isOnline} />
+
       {/* Dynamic Ambient Background Canvas */}
       <div className="fixed inset-0 pointer-events-none z-0">
         <div 
@@ -253,6 +320,10 @@ export default function App() {
           theme={settings.theme}
           onCycleTheme={handleCycleTheme}
           onOpenSettings={() => setActiveTab('settings')}
+          onOpenInstallModal={() => setIsInstallModalOpen(true)}
+          onOpenShortcutsModal={() => setIsShortcutsModalOpen(true)}
+          isStandalone={pwa.isStandalone}
+          isInstallable={pwa.isInstallable}
         />
       </div>
 
@@ -423,9 +494,31 @@ export default function App() {
             onUpdateSettings={handleUpdateSettings}
             onResetDefaults={handleResetDefaults}
             session={session}
+            onOpenInstallModal={() => setIsInstallModalOpen(true)}
+            onOpenShortcutsModal={() => setIsShortcutsModalOpen(true)}
+            isInstallable={pwa.isInstallable}
+            isInstalled={pwa.isInstalled}
+            isStandalone={pwa.isStandalone}
           />
         )}
       </main>
+
+      {/* PWA Installation Modal */}
+      <InstallAppModal
+        isOpen={isInstallModalOpen}
+        onClose={() => setIsInstallModalOpen(false)}
+        isInstallable={pwa.isInstallable}
+        isInstalled={pwa.isInstalled}
+        isStandalone={pwa.isStandalone}
+        platform={pwa.platform}
+        onTriggerInstall={pwa.triggerInstall}
+      />
+
+      {/* Keyboard Shortcuts Reference Modal */}
+      <KeyboardShortcutsModal
+        isOpen={isShortcutsModalOpen}
+        onClose={() => setIsShortcutsModalOpen(false)}
+      />
 
       {/* Frosted Footer */}
       <footer className="relative z-10 bg-white/5 backdrop-blur-xl border-t border-white/10 py-4 mt-auto">
@@ -434,8 +527,24 @@ export default function App() {
             <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shadow-sm shadow-emerald-400" />
             <span className="font-mono text-slate-300">RFC 3393 Jitter • RFC 2681 One-Way Latency • RFC 1889 RTCP MOS</span>
           </div>
-          <div className="text-slate-400">
-            Enterprise Network Diagnostic Suite • Built for Network Engineers & NetOps
+          <div className="flex items-center gap-4 text-slate-400">
+            <button
+              onClick={() => setIsShortcutsModalOpen(true)}
+              className="hover:text-cyan-300 flex items-center gap-1 transition"
+              title="View CCIE Hotkeys (?)"
+            >
+              <Command className="w-3.5 h-3.5" />
+              <span>Shortcuts (?)</span>
+            </button>
+            <button
+              onClick={() => setIsInstallModalOpen(true)}
+              className="hover:text-cyan-300 flex items-center gap-1 transition"
+              title="Install NetTrace as Desktop or Mobile App (I)"
+            >
+              <Smartphone className="w-3.5 h-3.5" />
+              <span>Install App (I)</span>
+            </button>
+            <span className="hidden md:inline">NetTrace Enterprise • CCIE NetOps</span>
           </div>
         </div>
       </footer>
